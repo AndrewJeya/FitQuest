@@ -25,6 +25,9 @@
     },
     "extra": {
       "openAI_API_KEY": ""
-    }
+    },
+    "plugins": [
+      "expo-video"
+    ]
   }
 }

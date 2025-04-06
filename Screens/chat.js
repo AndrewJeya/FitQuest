@@ -6,6 +6,7 @@ import { db } from '../firebaseConfig';
 import { getFitnessResponse } from '../API/chatApi';
 import styles from "../styles/chatStyles";
 import { WebView } from 'react-native-webview';
+import { useVideoPlayer, VideoView } from 'expo-video';
 
 // Helper function to generate unique IDs
 const generateId = () => Date.now() + Math.random().toString(36).substr(2, 9);
@@ -14,10 +15,11 @@ const encodeEmail = (email) => {
   return email.replace(/\./g, ',').replace(/@/g, '_at_').replace(/\$/g, '_dollar_').replace(/#/g, '_hash_');
 };
 
+
 const backgroundImages = {
-  Nova: require('../assets/novaBG.png'),
-  Valor: require('../assets/valorBG.png'),
-  Lumina: require('../assets/luminaBG.png'),
+  Nova: require('../assets/valorBG.mp4'),
+  Valor: require('../assets/valorBG.mp4'),
+  Lumina: require('../assets/valorBG.mp4'),
 };
 
 const trainerAvatars = {
@@ -25,6 +27,9 @@ const trainerAvatars = {
   Lumina: require('../assets/luminaPP.png'),
   Valor: require('../assets/valorPP.png'),
 };
+
+
+
 
 const Chat = ({ route, navigation }) => {
   const [messages, setMessages] = useState([]);
@@ -39,7 +44,6 @@ const Chat = ({ route, navigation }) => {
   const [permission, requestPermission] = useCameraPermissions();
 
   const progress = useRef(new Animated.Value(0)).current;
-
   const userInfo = route.params?.userInfo || {};
   const { name = "User", email = "dummy@outlook.com", height = 0, weight = 0, bmi = 0, 
           exerciseLevel = "unknown", house = "unknown", selectedOptions = [], 
@@ -50,6 +54,11 @@ const Chat = ({ route, navigation }) => {
 
   const getBackgroundImage = () => backgroundImages[house] || require('../assets/splash.png');
 
+  const player = useVideoPlayer(getBackgroundImage(), player => {
+    player.loop = false;
+    player.play();
+  });
+  
   // Load chat history from Firebase
   const loadChatHistory = useCallback(async () => {
     try {
@@ -122,7 +131,7 @@ const Chat = ({ route, navigation }) => {
 
     Animated.timing(progress, {
       toValue: 1,
-      duration: 3000,
+      duration: 5000,
       useNativeDriver: false,
     }).start();
   }, [name, house, selectedOptions]);
@@ -249,14 +258,21 @@ const Chat = ({ route, navigation }) => {
 
   if (!initialized) {
     return (
-      <ImageBackground source={getBackgroundImage()} style={styles.Loading_backgroundImage}>
-        <View style={styles.Loading_container}>
-          <Text style={styles.Loading_welcomeText}>Hi {name}, welcome to {house}!</Text>
-          <View style={styles.progressBarContainer}>
-            <Animated.View style={[styles.progressBar, { width: progressInterpolate }]} />
-          </View>
+      <View style={styles.LoadingPagecontainer}>
+      <VideoView 
+        style={styles.Loading_backgroundVideo} 
+        player={player}
+        resizeMode="cover"  // Ensure video fills the container
+        allowsFullscreen={false}  // Disable for background
+        allowsPictureInPicture={false}
+      />
+      <View style={styles.Loading_container}>
+        <Text style={styles.Loading_welcomeText}>Hi {name}, welcome to {house}!</Text>
+        <View style={styles.progressBarContainer}>
+          <Animated.View style={[styles.progressBar, { width: progressInterpolate }]} />
         </View>
-      </ImageBackground>
+      </View>
+    </View>
     );
   }
 

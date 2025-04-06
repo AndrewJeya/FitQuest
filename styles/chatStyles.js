@@ -58,11 +58,11 @@ const styles = StyleSheet.create({
     },
     videoContainer: {
         width: '100%',
-        height: 200,
+        aspectRatio: 16 / 9,
         borderRadius: 10,
         overflow: 'hidden',
         marginVertical: 10,
-        marginLeft:50,
+        marginLeft: 50,
     },
     video: {
         flex: 1,
@@ -174,17 +174,31 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#000',
     },
-    Loading_backgroundImage: {
+    LoadingPagecontainer:{
+
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        resizeMode: 'cover',
+
+
     },
-    Loading_container: {
+    Loading_backgroundVideo: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: -1, // Ensure it stays behind content
+        backgroundColor: 'black' // Fallback if video fails
+      },
+      Loading_container: {
+        position: 'absolute',
         flex: 1,
-        justifyContent: 'flex-end',
+        justifyContent: 'center',
         alignItems: 'center',
         paddingBottom: 40,
+        bottom:30,
+        
     },
     Loading_welcomeText: {
         color: '#fff',
@@ -195,14 +209,15 @@ const styles = StyleSheet.create({
     },
     progressBarContainer: {
         width: '80%',
-        height: 10,
-        backgroundColor: '#d8d8d8',
+        height: 5,
+        backgroundColor: 'rgba(255, 255, 255, 0.16)',
         borderRadius: 5,
         overflow: 'hidden',
+        
     },
     progressBar: {
         height: 10,
-        backgroundColor: '#03C988',
+        backgroundColor: '#fff',
         borderRadius: 5,
     },
     completeButton: {
@@ -266,14 +281,21 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255, 255, 255, 0.08)',
         marginBottom: 10,
         marginLeft: 40,
-        
         maxWidth: '100%',
         alignSelf: 'center',
     },
+    background_Video: {
+
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        bottom: 0 ,
+        right:0,
+
+    }, 
     exerciseDetailsText: { // New style
         fontSize: 16,
         color: '#FFF',
-        
     },
 });
 

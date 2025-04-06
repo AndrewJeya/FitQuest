@@ -81,7 +81,10 @@ const DashboardScreen = ({ route, navigation }) => {
                         tasks.map((item, index) => (
                     <View key={index} style={styles.planItem}>
                         <Text style={styles.planTime}>{item.time}</Text>
-                        <Text style={styles.planText}>{item.emoji} {item.title}</Text>
+                        <Text style={styles.planText}>
+                            <Text style={styles.planEmoji}>{item.emoji}</Text>
+                            {item.title}
+                        </Text>
                     </View>
                     ))
                      ) : (
@@ -243,26 +246,43 @@ const styles = StyleSheet.create({
     planItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 12,
-        backgroundColor: 'rgba(103, 122, 132, 0.19)',
+        justifyContent:'space-between',
         marginBottom:22,
-        borderRadius:8,
+        
     },
     planTime: {
         color: '#888',
-        marginRight: 16,
+        marginRight:6,
         width: 70,
     },
     planText: {
         color: '#fff',
         flex: 1,
         fontSize: 16,
+        backgroundColor: 'rgba(103, 122, 132, 0.19)',
+        paddingHorizontal:11,
+        paddingVertical:11,
+        borderRadius:8,
+    },
+    planEmoji:{
+
+        backgroundColor: 'rgba(245, 245, 245, 0.06)',
+        borderRadius:50,
+        width:16,
+        height:16,
+        padding:30,
+
     },
     bottomBar: {
         alignItems: 'center',
         paddingVertical: 16,
         zIndex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backgroundColor: 'transparent', // Set to transparent, then apply gradient
+        backgroundImage: 'linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(160, 157, 174, 0.07) 100%)', // Apply gradient
+        shadowColor: 'rgba(0, 0, 0, 0.08)',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 1, // Shadow opacity
+        shadowRadius: 24,
     },
     bottomAvatar: {
         width: 60,
