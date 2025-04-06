@@ -17,7 +17,7 @@ const encodeEmail = (email) => {
 
 
 const backgroundImages = {
-  Nova: require('../assets/valorBG.mp4'),
+  Nova: require('../assets/novaBG.mp4'),
   Valor: require('../assets/valorBG.mp4'),
   Lumina: require('../assets/luminaBG.mp4'),
 };
@@ -131,7 +131,7 @@ const Chat = ({ route, navigation }) => {
 
     Animated.timing(progress, {
       toValue: 1,
-      duration: 5000,
+      duration: 10000,
       useNativeDriver: false,
     }).start();
   }, [name, house, selectedOptions]);
