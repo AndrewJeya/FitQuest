@@ -19,7 +19,7 @@ const encodeEmail = (email) => {
 const backgroundImages = {
   Nova: require('../assets/valorBG.mp4'),
   Valor: require('../assets/valorBG.mp4'),
-  Lumina: require('../assets/valorBG.mp4'),
+  Lumina: require('../assets/luminaBG.mp4'),
 };
 
 const trainerAvatars = {
