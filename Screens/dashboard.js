@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
+import LottieView from 'lottie-react-native';
 
 const DashboardScreen = ({ route, navigation }) => {
     const {
@@ -14,11 +15,11 @@ const DashboardScreen = ({ route, navigation }) => {
     console.log("Tasks in dashboard:", JSON.stringify(tasks, null, 2));
 
     const days = [
-        { key: 'mon', abbr: 'M' },
+        { key: 'mon', abbr: 'Mo' },
         { key: 'tue', abbr: 'Tu' },
-        { key: 'wed', abbr: 'W' },
+        { key: 'wed', abbr: 'We' },
         { key: 'thu', abbr: 'Th' },
-        { key: 'fri', abbr: 'F' },
+        { key: 'fri', abbr: 'Fr' },
         { key: 'sat', abbr: 'Sa' },
         { key: 'sun', abbr: 'Su' }
     ];
@@ -70,11 +71,31 @@ const DashboardScreen = ({ route, navigation }) => {
 
                 <View style={styles.dataCards}>
                     <View style={styles.dataCard}>
-                        <Text style={styles.cardTitle}>Daily Calories</Text>
+                        <View style={styles.cardTitleAndImage}>
+                            <Text style={styles.cardTitle}>Daily Calories</Text>
+                            <Image
+                            source={require('../assets/fireDashboard.png')}
+                            style={styles.cardImage}
+                          
+                            />
+                        </View>
+                        <View style={styles.cardProgressBarContainer}>
+                            <View style={styles.cardProgressBarFill}></View>
+                        </View>
                         <Text style={styles.cardValue}>{recommended_calories_per_day}</Text>
                     </View>
                     <View style={[styles.dataCard, { marginLeft: 16 }]}>
-                        <Text style={styles.cardTitle}>Exercises</Text>
+                    <View style={styles.cardTitleAndImage}>
+                            <Text style={styles.cardTitle}>Exercises</Text>
+                            <Image
+                            source={require('../assets/exerciseDashboard.png')}
+                            style={styles.cardImage}
+        
+                            />
+                        </View>
+                        <View style={styles.cardProgressBarContainer}>
+                            <View style={styles.cardProgressBarFill}></View>
+                        </View>
                         <Text style={styles.cardValue}>{tasks.length}</Text>
                     </View>
                 </View>
@@ -83,8 +104,12 @@ const DashboardScreen = ({ route, navigation }) => {
                     {days.map((day) => (
                         <View key={day.key} style={styles.day}>
                             <Text style={styles.dayText}>{day.abbr}</Text>
+                            <View style={styles.dayProgress}>
+                                <Text style={styles.dayProgressText}>0%</Text>
+                            </View>
                         </View>
                     ))}
+
                 </View>
 
                 <View style={styles.todaysPlan}>
@@ -107,16 +132,21 @@ const DashboardScreen = ({ route, navigation }) => {
                 </View>
             </ScrollView>
 
-            <View style={styles.bottomBar}>
-                    <TouchableOpacity onPress={() => navigation.navigate('Chat', { userInfo: route.params?.userInfo })}>
-                    <Image
-                        source={require("../assets/avatarAI.png")}
-                    style={styles.bottomAvatar}
-                        />
-                    </TouchableOpacity>
-                
-            </View>
-        </View>
+    <View style={styles.bottomBar}>
+        <TouchableOpacity style={styles.trainerAIButton} onPress={() => navigation.navigate('Chat', { userInfo: route.params?.userInfo })}>
+            <LottieView 
+                style={styles.animationAI} 
+                source={require('../assets/animationAI.json')} 
+                autoPlay 
+                loop 
+            />
+            <Image
+                source={require('../assets/valorAI.png')}
+                style={styles.bottomAvatar}
+            />
+        </TouchableOpacity>
+    </View>
+ </View>
     );
 };
 
@@ -239,25 +269,52 @@ const styles = StyleSheet.create({
         minHeight: 100,
     },
 
+    cardTitleAndImage:{
+        flexDirection: 'row',
+        alignItems:'center',
+        justifyContent:'space-between',
+        marginBottom:8,
+       
+    },
+
+    cardImage:{
+        height:26,
+        width:26,
+    },
+
     cardTitle: {
         color: '#fff',
         fontSize: 16,
-        marginBottom: 8,
+        fontWeight: 'bold',
+    },
+    cardProgressBarContainer:{
+        backgroundColor:'rgba(255,255,255,0.16)',
+        borderRadius:8,
+        height:8,
+        marginTop:20,
+    },
+    cardProgressBarFill:{
+        backgroundColor: 'rgba(3,201,136,0.73)',
+        width: '80%',  // Percentage based
+        height: '100%',
+        borderRadius: 8,
     },
     cardValue: {
         color: '#fff',
-        fontSize: 24,
-        fontWeight: 'bold',
+        fontSize: 14,
+        marginTop:8,
+        
     },
     daySelection: {
         flexDirection: 'row',
         justifyContent: 'space-around',
         padding: 16,
         zIndex: 1,
-        // backgroundColor: 'rgba(34, 34, 34, 0.8)',
+        //backgroundColor: 'rgba(34, 34, 34, 0.20)',
         borderRadius: 10,
         marginHorizontal: 16,
         marginBottom: 16,
+        marginTop:16,
     },
     day: {
         width: 40,
@@ -265,6 +322,26 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    dayText:{ 
+        color: '#fff',
+    },
+    dayProgress:{
+        backgroundColor:'rgba(245,245,245,0.06)',
+        borderColor:'rgba(217,217,217,0.08)',
+        borderWidth:1,
+        height:36,
+        width:36,
+        borderRadius:50,
+        marginTop:10,
+        justifyContent:'center',
+        alignItems:'center',
+    },
+    dayProgressText:{
+
+        color: '#f5F5F5',
+        fontSize:12,
+
     },
     todaysPlan: {
         padding: 16,
@@ -306,8 +383,8 @@ const styles = StyleSheet.create({
 
     },
     planEmoji:{
-        width:16,
-        height:16,
+        width:18,
+        height:18,
         
     },
     planEmojiBackground:{
@@ -319,19 +396,37 @@ const styles = StyleSheet.create({
 
     bottomBar: {
         alignItems: 'center',
-        paddingVertical: 16,
+        justifyContent:'center', 
         zIndex: 1,
         backgroundColor: 'transparent', // Set to transparent, then apply gradient
-        backgroundImage: 'linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(160, 157, 174, 0.07) 100%)', // Apply gradient
-        shadowColor: 'rgba(0, 0, 0, 0.08)',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 1, // Shadow opacity
-        shadowRadius: 24,
+        paddingBottom:30,
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+    },
+    trainerAIButton: {
+        width: 70,  // Increased container size
+        height: 70, // Increased container size
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative', // Important for absolute positioning
+        backgroundColor: 'transparent', // Make button background transparent
+    
+        
+    },
+    animationAI: {
+        ...StyleSheet.absoluteFillObject, // Fills the container
+        width: '100%',  // Takes full width of container
+        height: '100%', // Takes full height of container
+    
     },
     bottomAvatar: {
-        width: 60,
-        height: 60,
+        zIndex: 2,
+        height: 50,     // Slightly larger avatar
+        width: 50,      // Slightly larger avatar
         borderRadius: 30,
+        position: 'absolute', // Positions relative to trainerAIButton
     },
       notaskContainer: {
         color: '#fff',
