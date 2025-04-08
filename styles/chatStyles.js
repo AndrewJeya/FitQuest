@@ -199,6 +199,7 @@ const styles = StyleSheet.create({
         paddingBottom: 70,
         bottom:0,
         backgroundColor: "black",
+        width:'100%',
         
     },
     Loading_welcomeText: {

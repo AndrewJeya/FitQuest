@@ -55,7 +55,7 @@ const Chat = ({ route, navigation }) => {
   const getBackgroundImage = () => backgroundImages[house] || require('../assets/splash.png');
 
   const player = useVideoPlayer(getBackgroundImage(), player => {
-    player.loop = false;
+    player.loop = true;
     player.play();
   });
   

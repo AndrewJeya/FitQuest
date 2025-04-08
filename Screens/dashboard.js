@@ -31,13 +31,16 @@ const DashboardScreen = ({ route, navigation }) => {
             />
 
             <View style={styles.topBar}>
-                <Image
-                    source={require('../assets/user.png')}
-                    style={styles.avatar}
-                />
-                <View style={styles.pointsContainer}>
-                    <Image source={require('../assets/points-icon.png')} style={styles.pointsIcon} />
-                    <Text style={styles.pointsText}>{points}</Text>
+
+                <View style={styles.pointAndavatarContainer}>
+                    <Image
+                        source={require('../assets/user.png')}
+                        style={styles.avatar}
+                    />
+                    <View style={styles.pointsContainer}>
+                        <Image source={require('../assets/points-icon.png')} style={styles.pointsIcon} />
+                        <Text style={styles.pointsText}>{points}</Text>
+                    </View>
                 </View>
                 <TouchableOpacity 
                     style={styles.upgradeButton} 
@@ -49,10 +52,19 @@ const DashboardScreen = ({ route, navigation }) => {
 
             <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
                 <View style={styles.greetingSection}>
-                    <Text style={styles.date}>5th March 2025</Text>
-                    <Text style={styles.greeting}>{userInfo.name}, Let's conquer the day!</Text>
-                    <View style={styles.goalsContainer}>
-                        <Text style={styles.goalsText}>{goalsCompleted}/{totalGoals} goals completed</Text>
+                    <View style={styles.greetingRightContainer}>
+                        <Text style={styles.date}>5th March 2025</Text>
+                        <Text style={styles.greetingName}>{userInfo.name},</Text>
+                        <Text style={styles.greetingText}>Let's conquer the day!</Text>
+                        <View style={styles.goalsContainer}>
+                            <Text style={styles.goalsText}>{goalsCompleted}/{totalGoals} goals completed</Text>
+                        </View>
+                    </View>
+                    <View style={styles.greetingLeftContainer}>
+                        <Image
+                            source={require('../assets/dashboardProgress.png')}
+                            style={styles.greetingProgress}
+                        />
                     </View>
                 </View>
 
@@ -81,14 +93,16 @@ const DashboardScreen = ({ route, navigation }) => {
                         tasks.map((item, index) => (
                     <View key={index} style={styles.planItem}>
                         <Text style={styles.planTime}>{item.time}</Text>
-                        <Text style={styles.planText}>
-                            <Text style={styles.planEmoji}>{item.emoji}</Text>
-                            {item.title}
-                        </Text>
+                        <View style={styles.taskContainer}>
+                            <View style={styles.planEmojiBackground}>
+                                <Text style={styles.planEmoji}>{item.emoji}</Text>
+                            </View>
+                            <Text style={styles.planText}>{item.title}</Text>
+                        </View>
                     </View>
                     ))
                      ) : (
-                    <Text style={styles.noPlanText}>No tasks for today.</Text>
+                    <Text style={styles.notaskContainer}>No tasks for today.</Text>
                     )}
                 </View>
             </ScrollView>
@@ -125,24 +139,34 @@ const styles = StyleSheet.create({
     },
     topBar: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent:'space-between',
         alignItems: 'center',
         padding: 16,
         zIndex: 1,
-        marginTop: 30,
+        marginTop: 50,
+    },
+    pointAndavatarContainer:{
+        flexDirection: 'row',
+        justifyContent:'space-between',
+        alignItems: 'center',
+
     },
     avatar: {
-        width: 40,
-        height: 40,
+        width: 30,
+        height: 30,
         borderRadius: 20,
+        marginRight:20,
     },
     pointsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor:'#353E3A',
+        paddingRight:12,
+        borderRadius:50,
     },
     pointsIcon: {
-        width: 24,
-        height: 24,
+        width: 30,
+        height: 30,
         marginRight: 5,
     },
     pointsText: {
@@ -150,31 +174,46 @@ const styles = StyleSheet.create({
         fontSize: 18,
     },
     upgradeButton: {
-        borderWidth: 1,
-        borderColor: '#00FF00',
+        backgroundColor:'rgba(53, 62, 58, 0.40)',
         borderRadius: 20,
         paddingHorizontal: 12,
         paddingVertical: 6,
     },
     upgradeText: {
-        color: '#00FF00',
+        color:'rgba(3, 201, 136, 0.73)',
         fontSize: 16,
     },
     greetingSection: {
-        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent:'space-between',
+        padding: 20,
         zIndex: 1,
         backgroundColor:'rgba(3, 201, 136, 0.24)',
-        borderRadius:16
+        borderRadius:16,
+        marginHorizontal:16,
+        marginTop:24,
+        marginBottom:18,
+        
     },
+    greetingRightContainer:{},
+    greetingLeftContainer:{},
     date: {
-        color: '#888',
+        color:'rgba(245, 245, 245, 0.30)',
         fontSize: 16,
+        marginBottom:16,
     },
-    greeting: {
-        color: '#fff',
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginTop: 8,
+    greetingName:{
+
+        fontSize:18,
+        color:'white',
+
+    },
+    greetingText:{
+        
+        fontSize:18,
+        color:'white',
+
     },
     goalsContainer: {
         flexDirection: 'row',
@@ -182,8 +221,8 @@ const styles = StyleSheet.create({
         marginTop: 16,
     },
     goalsText: {
-        color: '#fff',
-        fontSize: 16,
+        color: '#C2F997',
+        fontSize: 18,
     },
     dataCards: {
         flexDirection: 'row',
@@ -227,10 +266,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    dayText: {
-        color: '#fff',
-        fontSize: 16,
-    },
     todaysPlan: {
         padding: 16,
         zIndex: 1,
@@ -241,12 +276,11 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 20,
         fontWeight: 'bold',
-        marginBottom: 16,
+        marginBottom: 24,
     },
     planItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent:'space-between',
         marginBottom:22,
         
     },
@@ -254,25 +288,35 @@ const styles = StyleSheet.create({
         color: '#888',
         marginRight:6,
         width: 70,
+        
     },
-    planText: {
-        color: '#fff',
-        flex: 1,
-        fontSize: 16,
+    taskContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: 'rgba(103, 122, 132, 0.19)',
         paddingHorizontal:11,
         paddingVertical:11,
         borderRadius:8,
+        flex:1,
+        flexWrap: 'wrap',
+    },
+    planText:{
+        color: 'white',
+        fontSize: 16,
+
     },
     planEmoji:{
-
-        backgroundColor: 'rgba(245, 245, 245, 0.06)',
-        borderRadius:50,
         width:16,
         height:16,
-        padding:30,
-
+        
     },
+    planEmojiBackground:{
+        backgroundColor: 'rgba(245, 245, 245, 0.06)',
+        padding:10,
+        borderRadius:'50%',
+        marginRight:15,
+    },
+
     bottomBar: {
         alignItems: 'center',
         paddingVertical: 16,
@@ -289,7 +333,7 @@ const styles = StyleSheet.create({
         height: 60,
         borderRadius: 30,
     },
-      noPlanText: {
+      notaskContainer: {
         color: '#fff',
         fontStyle: 'italic',
         textAlign: 'center'
