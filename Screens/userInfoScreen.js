@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, 
-  KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ScrollView 
+  KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ScrollView, Alert 
 } from 'react-native';
 
 const UserInfoScreen = ({ route, navigation }) => {
@@ -11,7 +11,31 @@ const UserInfoScreen = ({ route, navigation }) => {
   const { name, email } = route.params; // Get name & email
 
   const handleNext = () => {
-    const bmi = (weight / ((height / 100) ** 2)).toFixed(2);
+    if (!age.trim() || !height.trim() || !weight.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    const ageNum = parseInt(age);
+    const heightNum = parseInt(height);
+    const weightNum = parseInt(weight);
+
+    if (ageNum < 13 || ageNum > 120) {
+      Alert.alert('Error', 'Please enter a valid age between 13 and 120');
+      return;
+    }
+
+    if (heightNum < 100 || heightNum > 250) {
+      Alert.alert('Error', 'Please enter a valid height between 100 and 250 cm');
+      return;
+    }
+
+    if (weightNum < 30 || weightNum > 300) {
+      Alert.alert('Error', 'Please enter a valid weight between 30 and 300 kg');
+      return;
+    }
+
+    const bmi = (weightNum / ((heightNum / 100) ** 2)).toFixed(2);
     navigation.navigate('ExerciseLevel', { name, age, height, weight, bmi, email });
   };
 

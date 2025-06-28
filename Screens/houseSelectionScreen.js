@@ -1,31 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, ImageBackground, Dimensions, TouchableOpacity } from 'react-native';
-
-const { width } = Dimensions.get('window');
-
-// 🔹 House Crest Images
-const houseImages = {
-  Nova: require('../assets/houseofnova.png'),
-  Lumina: require('../assets/houseoflumina.png'),
-  Valor: require('../assets/houseofvalor.png'),
-};
-
-// 🔹 Trainer Profile Images
-const trainerAvatars = {
-  Nova: require('../assets/novaPP.png'),
-  Lumina: require('../assets/luminaPP.png'),
-  Valor: require('../assets/valorPP.png'),
-};
-
-// 🔹 Icons
-const icons = {
-  bmi: require('../assets/bullseye.png'),
-  calories: require('../assets/fire.png'),
-};
+import { View, Text, StyleSheet, Image, ImageBackground, TouchableOpacity } from 'react-native';
+import { getAuth } from 'firebase/auth';
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES, HOUSE_CONFIG } from '../constants';
+import { normalizeHouseName, getHouseConfig } from '../utils/helpers';
+import { Button, Card } from '../components/common';
+import { globalStyles } from '../styles/globalStyles';
+import { set, ref } from 'firebase/database';
+import { db } from '../firebaseConfig';
 
 const HouseSelectionScreen = ({ route, navigation }) => {
-  console.log("DEBUG - route.params:", route.params); // Check if data is received
-
   const {
     name = "Unknown",
     email = "N/A",
@@ -34,40 +17,79 @@ const HouseSelectionScreen = ({ route, navigation }) => {
     bmi = 0,
     exerciseLevel = "N/A",
     selectedOptions = [],
-    house = "Nova", // Default to Nova if not found
+    house = "Nova",
     trainer = "Default Trainer",
     recommended_calories_per_day = 2000,
     target_bmi = 22,
     justification = "You belong here!",
   } = route.params || {};
 
-  console.log("DEBUG - House Selection Data:", {
-    name, email, height, weight, bmi, exerciseLevel, selectedOptions
-  });
+  const normalizedHouse = normalizeHouseName(house);
+  const houseConfig = getHouseConfig(normalizedHouse);
 
-  // 🛠 Normalize houseKey
-  const formattedHouse = house?.trim()?.replace(/^House of /i, '');
-  const houseKey = formattedHouse?.charAt(0).toUpperCase() + formattedHouse?.slice(1).toLowerCase();
+  const handleConfirmHouse = async () => {
+    const auth = getAuth();
+    const userId = auth.currentUser?.uid;
+    
+    if (!userId) {
+      console.error('No authenticated user found');
+      return;
+    }
 
-  console.log("DEBUG - Selected House:", houseKey);
+    // Save complete user data to Firebase
+    const completeUserData = {
+      name,
+      email,
+      height,
+      weight,
+      bmi,
+      exerciseLevel,
+      house: normalizedHouse,
+      trainer: houseConfig.trainer,
+      recommended_calories_per_day,
+      target_bmi,
+      justification,
+      selectedOptions,
+      points: 0, // Initialize points
+      createdAt: new Date().toISOString(),
+    };
 
-  // 🏠 Assign House Crest and Trainer Profile Image
-  const houseImage = houseImages[houseKey] || houseImages.Nova;
-  const trainerAvatar = trainerAvatars[houseKey] || trainerAvatars.Nova;
+    try {
+      await set(ref(db, `users/${userId}`), completeUserData);
+      console.log('User data saved successfully:', completeUserData);
+    } catch (error) {
+      console.error('Error saving user data:', error);
+    }
+
+    navigation.navigate('Chat', {
+      userId: userId,
+      userInfo: completeUserData,
+    });
+  };
+
+  const InfoBox = ({ label, value, icon }) => (
+    <View style={styles.infoBox}>
+      <View style={styles.infoTextContainer}>
+        <Text style={styles.infoLabel}>{label}</Text>
+        <Text style={styles.infoValue}>{value}</Text>
+      </View>
+      <Image source={icon} style={styles.infoIcon} />
+    </View>
+  );
 
   return (
-    <ImageBackground source={require('../assets/hselectionBG.png')} style={styles.backgroundImage}>
+    <ImageBackground source={require('../assets/hselectionBG.png')} style={globalStyles.backgroundImage}>
       <View style={styles.container}>
         <Text style={styles.title}>Based on your selections, you belong to</Text>
-        <Text style={styles.houseName}>{`House of ${houseKey}`}</Text>
+        <Text style={styles.houseName}>{houseConfig.name}</Text>
 
         {/* Main Card */}
         <View style={styles.cardWrapper}>
           <View style={styles.overflowContainer} />
-          <View style={styles.cardContainer}>
+          <Card variant="glass" padding="large" style={styles.cardContainer}>
             
             {/* House Crest */}
-            <Image source={houseImage} style={styles.houseImage} />
+            <Image source={houseConfig.crest} style={styles.houseImage} />
 
             {/* Justification */}
             <Text style={styles.justificationText}>{justification}</Text>
@@ -76,149 +98,114 @@ const HouseSelectionScreen = ({ route, navigation }) => {
             <View style={styles.trainerContainer}>
               <View>
                 <Text style={styles.trainerLabel}>Trainer</Text>
-                <Text style={styles.trainerName}>{trainer}</Text>
+                <Text style={styles.trainerName}>{houseConfig.trainer}</Text>
               </View>
-              <Image source={trainerAvatar} style={styles.trainerAvatar} />
+              <Image source={houseConfig.avatar} style={styles.trainerAvatar} />
             </View>
 
             {/* BMI & Calories Section */}
             <View style={styles.infoContainer}>
-              <View style={styles.infoBox}>
-                <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoLabel}>Target{"\n"}BMI</Text>
-                  <Text style={styles.infoValue}>{target_bmi}</Text>
-                </View>
-                <Image source={icons.bmi} style={styles.infoIcon} />
-              </View>
-
-              <View style={styles.infoBox}>
-                <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoLabel}>Daily{"\n"}Calories</Text>
-                  <Text style={styles.infoValue}>{recommended_calories_per_day} kcal</Text>
-                </View>
-                <Image source={icons.calories} style={styles.infoIcon} />
-              </View>
+              <InfoBox
+                label="Target\nBMI"
+                value={target_bmi}
+                icon={require('../assets/bullseye.png')}
+              />
+              <InfoBox
+                label="Daily\nCalories"
+                value={`${recommended_calories_per_day} kcal`}
+                icon={require('../assets/fire.png')}
+              />
             </View>
-          </View>
+          </Card>
           <View style={styles.overflowContainer} />
         </View>
 
         {/* Confirm Button */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
+          <Button
+            title="Confirm House"
+            onPress={handleConfirmHouse}
+            size="large"
             style={styles.confirmButton}
-            onPress={() =>
-              navigation.navigate('Chat', {
-                userInfo: {
-                  name,
-                  email,
-                  height,
-                  weight,
-                  bmi,
-                  exerciseLevel,
-                  house: houseKey,
-                  trainer,
-                  recommended_calories_per_day,
-                  target_bmi,
-                  justification,
-                  selectedOptions,
-                },
-              })
-            }
-          >
-            <Text style={styles.confirmButtonText}>Confirm House</Text>
-          </TouchableOpacity>
+          />
         </View>
       </View>
     </ImageBackground>
   );
 };
 
-
-
-
-
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-    resizeMode: 'cover',
-  },
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 0, // ✅ Ensures no extra top margin
-    paddingTop: 0, // ✅ Avoids unnecessary spacing
+    paddingHorizontal: SPACING.MD,
+    marginTop: 0,
+    paddingTop: 0,
   },
   title: {
-    fontSize: 20,
-    color: '#B5B5B5',
+    fontSize: FONT_SIZES.XL,
+    color: COLORS.GRAY.LIGHT,
     textAlign: 'center',
-    marginTop: 0, // ✅ Ensures no extra top margin
-    paddingTop: 0, // ✅ Avoids unnecessary spacing
-    
+    marginTop: 0,
+    paddingTop: 0,
   },
   houseName: {
-    fontSize: 28,
-    color: '#fff',
+    fontSize: FONT_SIZES.XXXL,
+    color: COLORS.WHITE,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 20,
     textAlign: 'center',
-    marginBottom:20,
   },
   cardWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 0, // ✅ Avoids unnecessary spacing
-    marginTop: 10,
+    paddingTop: 0,
+    marginTop: SPACING.SM,
   },
   overflowContainer: {
     width: 100,
     height: 475,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: COLORS.BACKGROUND.PROGRESS,
     borderRadius: 7,
-    marginHorizontal: 20,
+    marginHorizontal: SPACING.MD,
   },
   cardContainer: {
     width: 274,
     height: 475,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 7,
     alignItems: 'center',
-    padding: 15,
-    shadowColor: '#000',
+    shadowColor: COLORS.BLACK,
     shadowOpacity: 0.25,
     shadowRadius: 24,
   },
   houseImage: {
     width: 150,
     height: 150,
-    marginBottom: 15,
-    marginTop:15,
+    marginBottom: SPACING.MD,
+    marginTop: SPACING.MD,
   },
   justificationText: {
-    fontSize: 14,
-    color: '#fff',
+    fontSize: FONT_SIZES.SM,
+    color: COLORS.WHITE,
     textAlign: 'center',
-    marginBottom: 15,
-    paddingHorizontal: 10,
+    marginBottom: SPACING.MD,
+    paddingHorizontal: SPACING.SM,
   },
   trainerContainer: {
     width: '100%',
-    backgroundColor: 'rgba(103, 122, 132, 0.19)',
+    backgroundColor: COLORS.GRAY.CARD,
     borderRadius: 7,
-    padding: 10,
+    padding: SPACING.SM,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   trainerLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.SM,
     color: '#BBBBBB',
   },
   trainerName: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.SM,
     fontWeight: '600',
     color: '#D9D9D9',
     marginTop: 2,
@@ -230,16 +217,16 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flexDirection: 'row',
-    marginTop: 10,
+    marginTop: SPACING.SM,
     width: '100%',
     justifyContent: 'space-between',
   },
   infoBox: {
     width: '48%',
-    backgroundColor: 'rgba(103, 122, 132, 0.19)',
+    backgroundColor: COLORS.GRAY.CARD,
     borderRadius: 7,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingVertical: SPACING.SM,
+    paddingHorizontal: SPACING.SM,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -249,12 +236,12 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   infoLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.SM,
     color: '#BBBBBB',
     lineHeight: 18,
   },
   infoValue: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.SM,
     fontWeight: '600',
     color: '#D9D9D9',
     marginTop: 4,
@@ -273,24 +260,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   confirmButton: {
-    width:320,
+    width: 320,
     height: 50,
-    backgroundColor: '#03C988',
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom:20,
-  },
-  confirmButtonText: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 18,
-    textAlign: 'center',
-    marginTop: 50,
+    marginBottom: 20,
   },
 });
 

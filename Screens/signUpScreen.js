@@ -1,6 +1,6 @@
 // screens/SignUpScreen.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Alert } from 'react-native';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { db } from '../firebaseConfig';
 import { ref, set } from 'firebase/database';
@@ -11,18 +11,43 @@ const SignUpScreen = ({ navigation }) => {
   const [name, setName] = useState('');
 
   const handleSignUp = async () => {
+    if (!email.trim() || !password.trim() || !name.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
+      return;
+    }
+
     const auth = getAuth();
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+      
+      // Save basic user data
       await set(ref(db, 'users/' + user.uid), {
         email: user.email,
         name: name,
+        createdAt: new Date().toISOString(),
       });
-      // Navigate to UserInfo screen with email
-      navigation.navigate('UserInfo', { email,name });
+      
+      // Navigate to UserInfo screen with email and name
+      navigation.navigate('UserInfo', { email, name });
     } catch (error) {
       console.error('Error signing up:', error);
+      let errorMessage = 'Signup failed. Please try again.';
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'An account with this email already exists';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak';
+      }
+      
+      Alert.alert('Error', errorMessage);
     }
   };
 

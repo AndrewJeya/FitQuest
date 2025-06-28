@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View, ImageBackground, Animated, Image } from 'react-native';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { app } from './firebaseConfig';
+import notificationService from './utils/notificationService';
 import Chat from './Screens/chat';
 import HouseSelectionScreen from './Screens/houseSelectionScreen';
 import SelectionScreen from './Screens/selectionScreen';
@@ -69,6 +70,20 @@ export default function App() {
   const [user, setUser] = useState(null);
   const auth = getAuth(app);
 
+  // Initialize notifications when app starts
+  useEffect(() => {
+    const initNotifications = async () => {
+      try {
+        await notificationService.initialize();
+        console.log('App notifications initialized');
+      } catch (error) {
+        console.error('Error initializing app notifications:', error);
+      }
+    };
+    
+    initNotifications();
+  }, []);
+
   const onAuthStateChangedHandler = (user) => {
     setUser(user);
     if (initializing) {
@@ -88,22 +103,32 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Login">
+      <Stack.Navigator>
         {user ? (
+          // Authenticated flow
           <>
+            <Stack.Screen name="Dashboard" component={dashboard} options={{ headerShown: false }} />
             <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
             <Stack.Screen name="UserInfo" component={UserInfoScreen} options={{ headerShown: false }} />
             <Stack.Screen name="BMIScreen" component={BMIScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Selection" component={SelectionScreen} options={{ headerShown: false }} />
             <Stack.Screen name="HouseSelection" component={HouseSelectionScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Chat" component={Chat} options={{ headerShown: false }} />
             <Stack.Screen name="ExerciseLevel" component={ExerciseLevelScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Dashboard" component={dashboard} options={{ headerShown: false }} />
+            {/* Chat screen moved here to ensure it's always available after auth */}
+            <Stack.Screen name="Chat" component={Chat} options={{ headerShown: false }} />
           </>
         ) : (
+          // Unauthenticated flow
           <>
-            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            <Stack.Screen 
+              name="Login" 
+              component={LoginScreen} 
+              options={{ headerShown: false }}
+              initialParams={{ enableChatRedirect: true }}  // Add this flag
+            />
             <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+            {/* Add Chat screen here too for pre-auth references if needed */}
+            <Stack.Screen name="Chat" component={Chat} options={{ headerShown: false }} />
           </>
         )}
       </Stack.Navigator>

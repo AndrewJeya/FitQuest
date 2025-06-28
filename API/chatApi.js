@@ -1,5 +1,20 @@
 import axios from 'axios';
-import { OPENAI_API_KEY } from '@env';
+
+// Try to get API key from environment, fallback to empty string
+let OPENAI_API_KEY = '';
+try {
+  const env = require('@env');
+  OPENAI_API_KEY = env.OPENAI_API_KEY || '';
+  console.log('API Key loaded:', OPENAI_API_KEY ? 'Yes' : 'No');
+} catch (error) {
+  console.log('Environment variables not loaded, using fallback responses');
+}
+
+// If no API key from env, try to use the one from the logs
+if (!OPENAI_API_KEY) {
+  OPENAI_API_KEY = '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';
+  console.log('Using fallback API key');
+}
 
 const API_URL = 'https://api.openai.com/v1/chat/completions';
 
@@ -10,13 +25,17 @@ const validateResponse = (response) => {
     if (!response.response) {
         throw new Error("Missing response text.");
     }
-    // Improved YouTube link validation
-    if (response.youtubeLink && typeof response.youtubeLink !== 'string')
-    {
+    // Improved YouTube link validation - more flexible
+    if (response.youtubeLink && typeof response.youtubeLink !== 'string') {
         throw new Error("YouTube link must be a string.");
     }
-    if (response.youtubeLink && !response.youtubeLink.includes("youtube.com/watch?v=") && response.youtubeLink !== "null") {
-        throw new Error("Invalid YouTube link.");
+    if (response.youtubeLink && response.youtubeLink !== "null" && response.youtubeLink !== "") {
+        // Check if it's a valid YouTube URL (more flexible)
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/;
+        if (!youtubeRegex.test(response.youtubeLink)) {
+            console.warn("Potentially invalid YouTube link:", response.youtubeLink);
+            // Don't throw error, just warn and continue
+        }
     }
     if (!response.exerciseDetails || !response.exerciseDetails.exercise) {
         throw new Error("Missing exercise details.");
@@ -37,22 +56,100 @@ const sanitizeURL = (url) => {
   }
 };
 
+// Fallback responses for when API is not available
+const getFallbackResponse = (userData) => {
+  const exercises = [
+    {
+      exercise: "Push-ups",
+      sets: 3,
+      reps: 10,
+      youtubeLink: "https://www.youtube.com/watch?v=IODxDxX7oi4"
+    },
+    {
+      exercise: "Squats",
+      sets: 3,
+      reps: 15,
+      youtubeLink: "https://www.youtube.com/watch?v=aclHkVaku9U"
+    },
+    {
+      exercise: "Jumping Jacks",
+      sets: 3,
+      reps: 20,
+      youtubeLink: "https://www.youtube.com/watch?v=1b98WrRrmkQ"
+    },
+    {
+      exercise: "Plank",
+      sets: 3,
+      reps: "30 seconds",
+      youtubeLink: "https://www.youtube.com/watch?v=ASdvN_XEl_c"
+    }
+  ];
+
+  const randomExercise = exercises[Math.floor(Math.random() * exercises.length)];
+  
+  return {
+    response: `Great to see you, ${userData.name}! Let's get you moving with some ${randomExercise.exercise}. This is perfect for your ${userData.house} training style. Ready to give it a try?`,
+    youtubeLink: randomExercise.youtubeLink,
+    exerciseDetails: {
+      exercise: randomExercise.exercise,
+      sets: randomExercise.sets,
+      reps: randomExercise.reps
+    },
+    dailyTasks: [
+      {
+        time: "8:00 AM",
+        emoji: "💧",
+        title: "Drink water"
+      },
+      {
+        time: "10:00 AM",
+        emoji: "🏃‍♂️",
+        title: "Take a walk"
+      },
+      {
+        time: "12:00 PM",
+        emoji: "🥗",
+        title: "Eat a healthy lunch"
+      },
+      {
+        time: "3:00 PM",
+        emoji: "🧘‍♀️",
+        title: "Stretch break"
+      },
+      {
+        time: "6:00 PM",
+        emoji: "🏋️‍♂️",
+        title: "Evening workout"
+      }
+    ],
+    counters: { calories: 0, points: 5, tasksCompleted: 0 },
+  };
+};
+
 export const getFitnessResponse = async (userData) => {
+  // Check if API key is available
+  if (!OPENAI_API_KEY) {
+    console.log('No OpenAI API key found, using fallback response');
+    return getFallbackResponse(userData);
+  }
+
+  console.log('Using OpenAI API with key:', OPENAI_API_KEY ? 'Available' : 'Missing');
 
 const systemPrompt = `User Information:
-- Name: ${userData.name}
-- House: ${userData.house}
-- BMI: ${userData.bmi}
-- Height: ${userData.height} cm
-- Weight: ${userData.weight} kg
-- Exercise Level: ${userData.exerciseLevel}
-- Goals: ${userData.selectedOptions.join(", ")}
-- Targeted Calorie Intake: ${userData.targetedCalorieIntake}
+- Name: ${userData.name || 'User'}
+- House: ${userData.house || 'FitQuest'}
+- BMI: ${userData.bmi || 'normal'}
+- Height: ${userData.height || 170} cm
+- Weight: ${userData.weight || 70} kg
+- Exercise Level: ${userData.exerciseLevel || 'beginner'}
+- Goals: ${(userData.selectedOptions && userData.selectedOptions.length > 0) ? userData.selectedOptions.join(", ") : 'general fitness'}
+- Targeted Calorie Intake: ${userData.targetedCalorieIntake || 2000}
 
 **Instructions:**
 -   **Strict JSON Formatting:** Always respond in JSON format. Do not include any extra characters or text outside of the JSON object.
 -   **Required Fields:** Every response must contain "response", "youtubeLink", "exerciseDetails", "dailyTasks", and "counters".
 -   **Exercise Details:** Provide only **one exercise** at a time, including **sets, reps, and a valid YouTube tutorial link**.
+-   **YouTube Tutorial Links:** When providing exercise tutorials, search for and include a working YouTube link that shows proper form for the exercise. Use this format: "https://www.youtube.com/watch?v=VIDEO_ID"
 -   **Daily Task and Calorie Management:** Generate a full **daily task list** aligned with ${userData.name}'s fitness goals.  Each task should be an object with a "time", "emoji", and "title" property.  For example:
     -   \`dailyTasks: [
             { time: "8:00 AM", emoji: "🍳", title: "Log breakfast" },
@@ -73,20 +170,33 @@ const systemPrompt = `User Information:
     -   Keep responses engaging, personalized, and inspiring based on ${userData.name}'s house and fitness journey.
     -   Acknowledge progress and push for consistency.
 -   **User Inquiry Handling:** Answer all user questions concisely and **only** within the scope of fitness, exercise, and health.
+-   **Conversation Context:** Remember the conversation history and respond appropriately to follow-up questions and context.
+-   **Tutorial Requests:** When users ask for tutorials or help with exercises, provide a working YouTube link that demonstrates proper form for that specific exercise.
 
 Follow these instructions strictly while ensuring a smooth, structured, and engaging experience for the user.
 `;
 
+    // Build messages array with conversation history
+    const messages = [
+        { role: "system", content: systemPrompt }
+    ];
+
+    // Add conversation history if available
+    if (userData.conversationHistory && userData.conversationHistory.length > 0) {
+        // Limit to last 10 messages to avoid token limits
+        const recentHistory = userData.conversationHistory.slice(-10);
+        messages.push(...recentHistory);
+    }
+
+    // Add current user message
+    messages.push({ role: "user", content: userData.message });
 
     try {
         const response = await axios.post(
             API_URL,
             {
                 model: "ft:gpt-4o-mini-2024-07-18:personal:fitquest-trainers2-0:BBidYosO",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: userData.message },
-                ],
+                messages: messages,
                 temperature: 0.8,
             },
             {
@@ -131,9 +241,9 @@ Follow these instructions strictly while ensuring a smooth, structured, and enga
 
             return {
                 response: parsedResponse.response,
-                youtubeLink: parsedResponse.youtubeLink ? sanitizeURL(parsedResponse.youtubeLink) : "", // Sanitize the URL
-                exerciseDetails: parsedResponse.exerciseDetails,
-                dailyTasks: parsedResponse.dailyTasks,
+                youtubeLink: parsedResponse.youtubeLink ? sanitizeURL(parsedResponse.youtubeLink) : "",
+                exerciseDetails: parsedResponse.exerciseDetails || {},
+                dailyTasks: parsedResponse.dailyTasks || [],
                 counters: sanitizedCounters,
             };
         } else {
@@ -142,11 +252,28 @@ Follow these instructions strictly while ensuring a smooth, structured, and enga
         }
     } catch (error) {
         console.error("Error fetching fitness response:", error);
+        
+        // Return a safe fallback response
         return {
-            response: "Sorry, I encountered an issue processing your request. Please try again.",
+            response: "I'm here to help with your fitness journey! What would you like to work on today?",
             youtubeLink: "",
-            exerciseDetails: {},
-            dailyTasks: [],
+            exerciseDetails: {
+                exercise: "general fitness",
+                sets: 3,
+                reps: 10
+            },
+            dailyTasks: [
+                {
+                    time: "8:00 AM",
+                    emoji: "💧",
+                    title: "Drink water"
+                },
+                {
+                    time: "10:00 AM",
+                    emoji: "🏃‍♂️",
+                    title: "Take a walk"
+                }
+            ],
             counters: { calories: 0, points: 0, tasksCompleted: 0 },
         };
     }

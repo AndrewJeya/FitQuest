@@ -1,39 +1,90 @@
 // screens/LoginScreen.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Alert,ActivityIndicator } from 'react-native';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { db } from '../firebaseConfig'; // Assuming you're using Realtime Database
-import { ref, get } from 'firebase/database'; // For Realtime Database
+import { db } from '../firebaseConfig';
+import { ref, get } from 'firebase/database';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
+
+    setIsLoading(true);
     const auth = getAuth();
+    
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Retrieve user data from Firebase
-      const userRef = ref(db, 'users/' + user.uid);
+      // Retrieve user data using UID
+      const userRef = ref(db, `users/${user.uid}`);
       const snapshot = await get(userRef);
 
       if (snapshot.exists()) {
         const userData = snapshot.val();
-
-        // Retrieve chat history
-        const chatRef = ref(db, `chats/${user.email}`);
-        const chatSnapshot = await get(chatRef);
-        const chatHistory = chatSnapshot.exists() ? chatSnapshot.val() : [];
-
-        // Navigate to the Chat screen with user data and chat history
-        navigation.navigate('Chat', { userInfo: userData, chatHistory });
+        
+        // Check if user has complete profile data
+        if (!userData.name || !userData.house || !userData.selectedOptions) {
+          Alert.alert(
+            'Incomplete Profile', 
+            'Your profile is incomplete. Please complete the signup process.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // Sign out and redirect to signup
+                  auth.signOut();
+                  navigation.navigate('SignUp');
+                }
+              }
+            ]
+          );
+          return;
+        }
+        
+        // Navigate with complete user data
+        navigation.navigate('Chat', { 
+          userInfo: userData,
+          userId: user.uid
+        });
       } else {
-        console.error('No user data found');
+        Alert.alert(
+          'Profile Not Found', 
+          'No profile data found. Please complete the signup process.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Sign out and redirect to signup
+                auth.signOut();
+                navigation.navigate('SignUp');
+              }
+            }
+          ]
+        );
       }
     } catch (error) {
-      console.error('Error logging in:', error);
+      console.error('Login error:', error);
+      let errorMessage = 'Login failed. Please try again.';
+      
+      if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address';
+      } else if (error.code === 'auth/user-not-found') {
+        errorMessage = 'No account found with this email';
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = 'Incorrect password';
+      }
+      
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -53,6 +104,8 @@ const LoginScreen = ({ navigation }) => {
             placeholderTextColor="#888"
             value={email}
             onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
           />
           
           <Text style={styles.label}>Password</Text>
@@ -65,13 +118,21 @@ const LoginScreen = ({ navigation }) => {
             secureTextEntry
           />
           
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>Login</Text>
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Login</Text>
+            )}
           </TouchableOpacity>
         </View>
         <View style={styles.bottomContainer}>
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-            <Text style={styles.linkText}>Don't have an account? Signup</Text>
+            <Text style={styles.linkText}>Don't have an account? Sign up</Text>
           </TouchableOpacity>
         </View>
       </View>
