@@ -12,7 +12,7 @@ try {
 
 // If no API key from env, try to use the one from the logs
 if (!OPENAI_API_KEY) {
-  OPENAI_API_KEY = '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';
+  OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
   console.log('Using fallback API key');
 }
 
