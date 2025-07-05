@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ref, set, get, onValue } from 'firebase/database';
-import { db } from '../firebaseConfig';
+import database from '@react-native-firebase/database';
 import { getFitnessResponse } from '../API/chatApi';
 import { generateId } from '../utils/helpers';
 import notificationService from '../utils/notificationService';
@@ -33,7 +32,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
   // Load chat history from Firebase
   const loadChatHistory = useCallback(async () => {
     try {
-      const snapshot = await get(ref(db, `chats/${userId}`));
+      const snapshot = await database().ref(`chats/${userId}`).once('value');
       if (snapshot.exists()) {
         setMessages(snapshot.val());
       }
@@ -48,8 +47,8 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
     if (!userId) return;
 
     console.log('useChat - Setting up real-time listener for userId:', userId);
-    const dbRef = ref(db, `chats/${userId}`);
-    const unsubscribe = onValue(dbRef, (snapshot) => {
+    const dbRef = database().ref(`chats/${userId}`);
+    const unsubscribe = dbRef.on('value', (snapshot) => {
       if (snapshot.exists()) {
         const chatData = snapshot.val();
         console.log('useChat - Received chat data from Firebase:', chatData?.length || 0, 'messages');
@@ -64,7 +63,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
 
     return () => {
       console.log('useChat - Cleaning up real-time listener for userId:', userId);
-      unsubscribe();
+      dbRef.off('value', unsubscribe);
     };
   }, [userId]);
 
@@ -80,7 +79,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
             text: "Welcome to FitQuest! I'm here to help you on your fitness journey. What would you like to work on today?",
             sender: 'trainer'
           };
-          await set(ref(db, `chats/${userId}`), [defaultWelcome]);
+          await database().ref(`chats/${userId}`).set([defaultWelcome]);
           setInitialized(true);
           return;
         }
@@ -88,7 +87,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
         await loadChatHistory();
 
         // Check if messages are empty after loading
-        const snapshot = await get(ref(db, `chats/${userId}`));
+        const snapshot = await database().ref(`chats/${userId}`).once('value');
         if (!snapshot.exists() || snapshot.val().length === 0) {
           // Build a system prompt for Gemini to generate a unique welcome message
           const goals = userInfo.selectedOptions && userInfo.selectedOptions.length > 0
@@ -116,7 +115,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
             sender: 'trainer'
           };
 
-          await set(ref(db, `chats/${userId}`), [welcomeMessage]);
+          await database().ref(`chats/${userId}`).set([welcomeMessage]);
         }
         setInitialized(true);
       } catch (error) {
@@ -128,7 +127,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
             text: "Welcome to FitQuest! I'm here to help you on your fitness journey. What would you like to work on today?",
             sender: 'trainer'
           };
-          await set(ref(db, `chats/${userId}`), [fallbackWelcome]);
+          await database().ref(`chats/${userId}`).set([fallbackWelcome]);
         } catch (fallbackError) {
           console.error('Fallback welcome message failed:', fallbackError);
         }
@@ -150,7 +149,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
     const updatedMessages = [...messages, newUserMessage];
     
     try {
-      await set(ref(db, `chats/${userId}`), updatedMessages);
+      await database().ref(`chats/${userId}`).set(updatedMessages);
 
       // Create conversation context for the AI
       const conversationHistory = messages.map(msg => ({
@@ -187,7 +186,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
           }));
           
           // Save tasks to Firebase
-          await set(ref(db, `users/${userId}/dailyTasks`), tasksWithDate);
+          await database().ref(`users/${userId}/dailyTasks`).set(tasksWithDate);
           setLocalTasks(tasksWithDate);
           
           // Schedule notifications for the new tasks
@@ -214,7 +213,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
         
         // Update points in Firebase for persistence
         try {
-          await set(ref(db, `users/${userId}/points`), currentPoints + pointsEarned);
+          await database().ref(`users/${userId}/points`).set(currentPoints + pointsEarned);
         } catch (error) {
           console.error("Error updating points:", error);
         }
@@ -226,7 +225,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
           setLocalTasks(response.dailyTasks);
           // Also save tasks to Firebase for persistence
           try {
-            await set(ref(db, `users/${userId}/dailyTasks`), response.dailyTasks);
+            await database().ref(`users/${userId}/dailyTasks`).set(response.dailyTasks);
           } catch (error) {
             console.error("Error saving daily tasks:", error);
           }
@@ -242,7 +241,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
         };
 
         const finalMessages = [...updatedMessages, botResponse];
-        await set(ref(db, `chats/${userId}`), finalMessages);
+        await database().ref(`chats/${userId}`).set(finalMessages);
       } else {
         // Handle case where response is missing
         const fallbackResponse = {
@@ -255,7 +254,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
         };
 
         const finalMessages = [...updatedMessages, fallbackResponse];
-        await set(ref(db, `chats/${userId}`), finalMessages);
+        await database().ref(`chats/${userId}`).set(finalMessages);
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -308,7 +307,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
       };
 
       const finalMessages = [...updatedMessages, errorResponse];
-      await set(ref(db, `chats/${userId}`), finalMessages);
+      await database().ref(`chats/${userId}`).set(finalMessages);
       
       // Add points for the fallback exercise
       setLocalPoints(prev => prev + 5);
@@ -324,13 +323,13 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
       
       try {
         // Load points
-        const pointsSnapshot = await get(ref(db, `users/${userId}/points`));
+        const pointsSnapshot = await database().ref(`users/${userId}/points`).once('value');
         if (pointsSnapshot.exists()) {
           setLocalPoints(pointsSnapshot.val());
         }
         
         // Load daily tasks
-        const tasksSnapshot = await get(ref(db, `users/${userId}/dailyTasks`));
+        const tasksSnapshot = await database().ref(`users/${userId}/dailyTasks`).once('value');
         if (tasksSnapshot.exists()) {
           setLocalTasks(tasksSnapshot.val());
         }
@@ -355,7 +354,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
     const updatedMessages = [...messages, newImageMessage];
     
     try {
-      await set(ref(db, `chats/${userId}`), updatedMessages);
+      await database().ref(`chats/${userId}`).set(updatedMessages);
     } catch (error) {
       console.error('Error adding image message:', error);
       throw new Error("Could not add image message");
@@ -391,7 +390,7 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
     
     // Save updated tasks to Firebase
     try {
-      await set(ref(db, `users/${userId}/dailyTasks`), updatedTasks);
+      await database().ref(`users/${userId}/dailyTasks`).set(updatedTasks);
     } catch (error) {
       console.error("Error updating task completion:", error);
     }
@@ -443,4 +442,4 @@ export const useChat = (userId, userInfo, userDataManager = null) => {
     updateTaskCompletion: updateLocalTaskCompletion,
     handleTaskComplete,
   };
-}; 
+};

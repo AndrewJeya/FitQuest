@@ -1,9 +1,8 @@
 // screens/LoginScreen.js
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Animated, Dimensions } from 'react-native';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { db } from '../firebaseConfig';
-import { ref, get } from 'firebase/database';
+import auth from '@react-native-firebase/auth';
+import database from '@react-native-firebase/database';
 import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY } from '../constants';
 import * as Haptics from 'expo-haptics';
 
@@ -82,18 +81,16 @@ const LoginScreen = ({ navigation }) => {
 
     setIsLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const auth = getAuth();
     
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await auth().signInWithEmailAndPassword(email, password);
       const user = userCredential.user;
 
       // Retrieve user data using UID
-      const userRef = ref(db, `users/${user.uid}`);
-      const snapshot = await get(userRef);
+      const userSnapshot = await database().ref(`users/${user.uid}`).once('value');
 
-      if (snapshot.exists()) {
-        const userData = snapshot.val();
+      if (userSnapshot.exists()) {
+        const userData = userSnapshot.val();
         
         // Check if user has complete profile data
         if (!userData.name || !userData.house || !userData.selectedOptions) {
@@ -153,7 +150,7 @@ const LoginScreen = ({ navigation }) => {
               text: 'Cancel',
               onPress: () => {
                 // Sign out and stay on login
-                auth.signOut();
+                auth().signOut();
               },
               style: 'cancel'
             }

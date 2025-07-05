@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ref, get, onValue, set, push } from 'firebase/database';
-import { db } from '../firebaseConfig';
+import database from '@react-native-firebase/database';
 
 export const useUserData = (userId) => {
   const [userInfo, setUserInfo] = useState({});
@@ -24,31 +23,31 @@ export const useUserData = (userId) => {
       }
       
       // Load user info
-      const userSnapshot = await get(ref(db, `users/${userId}`));
+      const userSnapshot = await database().ref(`users/${userId}`).once('value');
       if (userSnapshot.exists()) {
         setUserInfo(userSnapshot.val());
       }
       
       // Load points
-      const pointsSnapshot = await get(ref(db, `users/${userId}/points`));
+      const pointsSnapshot = await database().ref(`users/${userId}/points`).once('value');
       if (pointsSnapshot.exists()) {
         setPoints(pointsSnapshot.val());
       }
       
       // Load daily tasks
-      const tasksSnapshot = await get(ref(db, `users/${userId}/dailyTasks`));
+      const tasksSnapshot = await database().ref(`users/${userId}/dailyTasks`).once('value');
       if (tasksSnapshot.exists()) {
         setTasks(tasksSnapshot.val());
       }
       
       // Load daily progress
-      const dailyProgressSnapshot = await get(ref(db, `users/${userId}/dailyProgress`));
+      const dailyProgressSnapshot = await database().ref(`users/${userId}/dailyProgress`).once('value');
       if (dailyProgressSnapshot.exists()) {
         setDailyProgress(dailyProgressSnapshot.val());
       }
       
       // Load weekly progress
-      const weeklyProgressSnapshot = await get(ref(db, `users/${userId}/weeklyProgress`));
+      const weeklyProgressSnapshot = await database().ref(`users/${userId}/weeklyProgress`).once('value');
       if (weeklyProgressSnapshot.exists()) {
         setWeeklyProgress(weeklyProgressSnapshot.val());
       }
@@ -72,7 +71,7 @@ export const useUserData = (userId) => {
     // Set loading to true only on initial load
     setIsLoading(true);
 
-    const unsubscribeUser = onValue(ref(db, `users/${userId}`), (snapshot) => {
+    const unsubscribeUser = database().ref(`users/${userId}`).on('value', (snapshot) => {
       console.log('useUserData - User data snapshot:', { exists: snapshot.exists(), hasData: !!snapshot.val() });
       if (snapshot.exists()) {
         setUserInfo(snapshot.val());
@@ -81,14 +80,14 @@ export const useUserData = (userId) => {
       setIsLoading(false);
     });
 
-    const unsubscribePoints = onValue(ref(db, `users/${userId}/points`), (snapshot) => {
+    const unsubscribePoints = database().ref(`users/${userId}/points`).on('value', (snapshot) => {
       if (snapshot.exists()) {
         setPoints(snapshot.val());
         setLastUpdated(new Date());
       }
     });
 
-    const unsubscribeTasks = onValue(ref(db, `users/${userId}/dailyTasks`), (snapshot) => {
+    const unsubscribeTasks = database().ref(`users/${userId}/dailyTasks`).on('value', (snapshot) => {
       if (snapshot.exists()) {
         setTasks(snapshot.val());
         setLastUpdated(new Date());
@@ -97,14 +96,14 @@ export const useUserData = (userId) => {
       }
     });
 
-    const unsubscribeDailyProgress = onValue(ref(db, `users/${userId}/dailyProgress`), (snapshot) => {
+    const unsubscribeDailyProgress = database().ref(`users/${userId}/dailyProgress`).on('value', (snapshot) => {
       if (snapshot.exists()) {
         setDailyProgress(snapshot.val());
         setLastUpdated(new Date());
       }
     });
 
-    const unsubscribeWeeklyProgress = onValue(ref(db, `users/${userId}/weeklyProgress`), (snapshot) => {
+    const unsubscribeWeeklyProgress = database().ref(`users/${userId}/weeklyProgress`).on('value', (snapshot) => {
       if (snapshot.exists()) {
         setWeeklyProgress(snapshot.val());
         setLastUpdated(new Date());
@@ -112,11 +111,11 @@ export const useUserData = (userId) => {
     });
 
     return () => {
-      unsubscribeUser();
-      unsubscribePoints();
-      unsubscribeTasks();
-      unsubscribeDailyProgress();
-      unsubscribeWeeklyProgress();
+      database().ref(`users/${userId}`).off('value', unsubscribeUser);
+      database().ref(`users/${userId}/points`).off('value', unsubscribePoints);
+      database().ref(`users/${userId}/dailyTasks`).off('value', unsubscribeTasks);
+      database().ref(`users/${userId}/dailyProgress`).off('value', unsubscribeDailyProgress);
+      database().ref(`users/${userId}/weeklyProgress`).off('value', unsubscribeWeeklyProgress);
     };
   }, [userId]);
 
@@ -125,7 +124,7 @@ export const useUserData = (userId) => {
     if (!userId) return;
     
     try {
-      await set(ref(db, `users/${userId}/points`), newPoints);
+      await database().ref(`users/${userId}/points`).set(newPoints);
       setPoints(newPoints);
     } catch (error) {
       console.error('Error updating points:', error);
@@ -145,7 +144,7 @@ export const useUserData = (userId) => {
     if (!userId) return;
     
     try {
-      await set(ref(db, `users/${userId}/dailyTasks`), newTasks);
+      await database().ref(`users/${userId}/dailyTasks`).set(newTasks);
       setTasks(newTasks);
     } catch (error) {
       console.error('Error updating tasks:', error);
@@ -187,7 +186,7 @@ export const useUserData = (userId) => {
     };
     
     try {
-      await set(ref(db, `users/${userId}/dailyProgress/${today.replace(/\s/g, '_')}`), todayProgress);
+      await database().ref(`users/${userId}/dailyProgress/${today.replace(/\s/g, '_')}`).set(todayProgress);
       
       // Update weekly progress
       await updateWeeklyProgress();
@@ -223,7 +222,7 @@ export const useUserData = (userId) => {
     }
     
     try {
-      await set(ref(db, `users/${userId}/weeklyProgress`), weekProgress);
+      await database().ref(`users/${userId}/weeklyProgress`).set(weekProgress);
     } catch (error) {
       console.error('Error updating weekly progress:', error);
     }
@@ -266,7 +265,7 @@ export const useUserData = (userId) => {
     if (!userId) return [];
     
     try {
-      const progressSnapshot = await get(ref(db, `users/${userId}/dailyProgress`));
+      const progressSnapshot = await database().ref(`users/${userId}/dailyProgress`).once('value');
       if (!progressSnapshot.exists()) return [];
       
       const progressData = progressSnapshot.val();
@@ -286,7 +285,7 @@ export const useUserData = (userId) => {
     if (!userId) return { currentStreak: 0, longestStreak: 0 };
     
     try {
-      const progressSnapshot = await get(ref(db, `users/${userId}/dailyProgress`));
+      const progressSnapshot = await database().ref(`users/${userId}/dailyProgress`).once('value');
       if (!progressSnapshot.exists()) return { currentStreak: 0, longestStreak: 0 };
       
       const progressData = progressSnapshot.val();
@@ -339,4 +338,4 @@ export const useUserData = (userId) => {
     getHistoricalProgress,
     getStreakInfo,
   };
-}; 
+};

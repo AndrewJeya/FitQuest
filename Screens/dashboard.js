@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Animated, ImageBackground } from 'react-native';
-import { getAuth, signOut } from 'firebase/auth';
-import { ref, get, set } from 'firebase/database';
-import { db } from '../firebaseConfig';
+import auth from '@react-native-firebase/auth';
+import database from '@react-native-firebase/database';
 import LottieView from 'lottie-react-native';
 import * as Haptics from 'expo-haptics';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES, DEFAULTS, HOUSE_CONFIG, HOUSES, TYPOGRAPHY } from '../constants';
@@ -13,13 +12,12 @@ import notificationService from '../utils/notificationService';
 import { getFitnessResponse } from '../API/chatApi';
 import { useUserData } from '../hooks/useUserData';
 import BottomNav from '../components/navigation/BottomNav';
-import { auth } from '../firebaseConfig';
 
 const DashboardScreen = ({ route, navigation }) => {
     console.log('Dashboard - Component mounted');
     
-    const auth = getAuth();
-    const userId = auth.currentUser?.uid;
+    const currentUser = auth().currentUser;
+    const userId = currentUser?.uid;
     
     console.log('Dashboard - User ID:', userId);
     
@@ -146,7 +144,7 @@ Please create 5-7 daily tasks that are:
                 }));
                 
                 // Save tasks to Firebase
-                await set(ref(db, `users/${userId}/dailyTasks`), tasksWithDate);
+                await database().ref(`users/${userId}/dailyTasks`).set(tasksWithDate);
                 
                 // Update local state
                 updateTasks(tasksWithDate);
@@ -169,7 +167,7 @@ Please create 5-7 daily tasks that are:
                     { id: 'task_5', time: '6:00 PM', emoji: '🏋️‍♂️', title: 'Evening workout', date: today, completed: false, points: 15 }
                 ];
                 
-                await set(ref(db, `users/${userId}/dailyTasks`), fallbackTasks);
+                await database().ref(`users/${userId}/dailyTasks`).set(fallbackTasks);
                 updateTasks(fallbackTasks);
             }
         } catch (error) {
@@ -290,7 +288,7 @@ Please create 5-7 daily tasks that are:
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         
         try {
-            await signOut(auth);
+            await auth().signOut();
             navigation.reset({
                 index: 0,
                 routes: [{ name: 'Login' }],

@@ -11,17 +11,16 @@ import {
   Switch,
   Platform,
 } from 'react-native';
-import { getAuth, signOut } from 'firebase/auth';
-import { get, ref } from 'firebase/database';
-import { db } from '../firebaseConfig';
+import auth from '@react-native-firebase/auth';
+import database from '@react-native-firebase/database';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES, HOUSE_CONFIG, HOUSES } from '../constants';
 import notificationService from '../utils/notificationService';
 import * as Haptics from 'expo-haptics';
 import { useUserData } from '../hooks/useUserData';
 
 const ProfileScreen = ({ navigation, route }) => {
-  const auth = getAuth();
-  const userId = auth.currentUser?.uid;
+  const currentUser = auth().currentUser;
+  const userId = currentUser?.uid;
   
   const {
     userInfo,
@@ -69,7 +68,7 @@ const ProfileScreen = ({ navigation, route }) => {
               if (Platform.OS === 'ios') {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               }
-              await signOut(auth);
+              await auth().signOut();
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'Login' }],
@@ -619,4 +618,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProfileScreen; 
+export default ProfileScreen;

@@ -1,9 +1,8 @@
 // screens/SignUpScreen.js
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { db } from '../firebaseConfig';
-import { ref, set } from 'firebase/database';
+import auth from '@react-native-firebase/auth';
+import database from '@react-native-firebase/database';
 
 const SignUpScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -60,13 +59,12 @@ const SignUpScreen = ({ navigation }) => {
     }
 
     setIsLoading(true);
-    const auth = getAuth();
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await auth().createUserWithEmailAndPassword(email, password);
       const user = userCredential.user;
       
       // Save basic user data
-      await set(ref(db, 'users/' + user.uid), {
+      await database().ref('users/' + user.uid).set({
         email: user.email,
         name: name,
         createdAt: new Date().toISOString(),

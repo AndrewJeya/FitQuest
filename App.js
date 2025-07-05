@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View, ImageBackground, Animated, Image, Text } from 'react-native';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './firebaseConfig';
+import auth from '@react-native-firebase/auth';
 import notificationService from './utils/notificationService';
 import { loadFonts } from './utils/fontLoader';
 import Chat from './Screens/chat';
@@ -150,7 +149,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    const subscriber = onAuthStateChanged(auth, onAuthStateChangedHandler);
+    const subscriber = auth().onAuthStateChanged(onAuthStateChangedHandler);
     return subscriber;
   }, []);
 
