@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../../constants';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES, TYPOGRAPHY } from '../../constants';
 
 const TaskItem = ({
   time,
@@ -11,6 +11,9 @@ const TaskItem = ({
   timeStyle,
   titleStyle,
   emojiStyle,
+  onMealPhoto,
+  isMealTask = false,
+  onToggle,
 }) => {
   const containerStyle = [
     styles.container,
@@ -30,15 +33,52 @@ const TaskItem = ({
     timeStyle
   ];
 
+  const isMeal = isMealTask || (typeof title === 'string' && (
+    title.toLowerCase().includes('meal') ||
+    title.toLowerCase().includes('breakfast') ||
+    title.toLowerCase().includes('lunch') ||
+    title.toLowerCase().includes('dinner') ||
+    title.toLowerCase().includes('eat') ||
+    title.toLowerCase().includes('food')
+  ));
+
+  const handleToggle = () => {
+    if (onToggle) {
+      onToggle(title, !completed);
+    }
+  };
+
   return (
     <View style={styles.wrapper}>
       <Text style={timeTextStyle}>{time}</Text>
-      <View style={containerStyle}>
+      <TouchableOpacity 
+        style={containerStyle} 
+        onPress={handleToggle}
+        activeOpacity={0.7}
+      >
         <View style={[styles.emojiContainer, emojiStyle]}>
           <Text style={styles.emoji}>{emoji}</Text>
         </View>
         <Text style={titleTextStyle}>{title}</Text>
-      </View>
+        
+        {/* Action Buttons */}
+        {!completed && isMeal && onMealPhoto && (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity 
+              style={styles.mealButton} 
+              onPress={onMealPhoto}
+            >
+              <Text style={styles.buttonText}>📸 Take Photo</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        {completed && (
+          <View style={styles.completedContainer}>
+            <Text style={styles.completedText}>✅ Completed</Text>
+          </View>
+        )}
+      </TouchableOpacity>
     </View>
   );
 };
@@ -65,8 +105,8 @@ const styles = StyleSheet.create({
   time: {
     color: COLORS.GRAY.MEDIUM,
     marginRight: SPACING.SM,
-    width: 70,
-    fontSize: FONT_SIZES.SM,
+    width: 50,
+    ...TYPOGRAPHY.CAPTION,
   },
   completedTime: {
     textDecorationLine: 'line-through',
@@ -82,11 +122,42 @@ const styles = StyleSheet.create({
   },
   title: {
     color: COLORS.WHITE,
-    fontSize: FONT_SIZES.MD,
+    ...TYPOGRAPHY.BODY_MEDIUM,
     flex: 1,
   },
   completedTitle: {
     textDecorationLine: 'line-through',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: SPACING.SM,
+    marginTop: SPACING.SM,
+    width: '100%',
+  },
+  mealButton: {
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: SPACING.MD,
+    paddingVertical: SPACING.SM,
+    borderRadius: BORDER_RADIUS.MD,
+    flex: 1,
+  },
+  buttonText: {
+    color: COLORS.WHITE,
+    ...TYPOGRAPHY.BUTTON_SMALL,
+    textAlign: 'center',
+  },
+  completedContainer: {
+    backgroundColor: COLORS.SUCCESS,
+    paddingHorizontal: SPACING.MD,
+    paddingVertical: SPACING.SM,
+    borderRadius: BORDER_RADIUS.MD,
+    alignItems: 'center',
+    marginTop: SPACING.SM,
+    width: '100%',
+  },
+  completedText: {
+    color: COLORS.WHITE,
+    ...TYPOGRAPHY.BUTTON_SMALL,
   },
 });
 

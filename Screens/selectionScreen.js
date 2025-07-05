@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, 
   ImageBackground, Dimensions, ActivityIndicator 
 } from 'react-native';
-import { fetchFitnessHouse } from '../API/openAIConfig'; // ✅ Correct Import
+import { fetchFitnessHouse } from '../API/openAIConfig'; // Now Gemini only
 import { useNavigation } from '@react-navigation/native';
 
 const options = [
@@ -35,11 +35,12 @@ const SelectionScreen = ({ route }) => {
 
   // Toggle selected preferences
   const toggleOption = (option) => {
-    setSelectedOptions((prevSelected) =>
-      prevSelected.includes(option.label)
-        ? prevSelected.filter((item) => item !== option.label)
-        : [...prevSelected, option.label]
-    );
+    setSelectedOptions((prevSelected) => {
+      const currentSelected = prevSelected || [];
+      return Array.isArray(currentSelected) && currentSelected.includes(option.label)
+        ? currentSelected.filter((item) => item !== option.label)
+        : [...currentSelected, option.label];
+    });
   };
 
   // Handle Next Button Click
@@ -62,14 +63,14 @@ const SelectionScreen = ({ route }) => {
       preferences: selectedOptions, // Selected fitness preferences
     };
 
-    console.log("🚀 Sending User Data to OpenAI:", JSON.stringify(userData, null, 2)); // ✅ Debugging Log
+    console.log("🚀 Sending User Data to Gemini:", JSON.stringify(userData, null, 2));
 
     try {
-      const response = await fetchFitnessHouse(userData); // ✅ API Call
-      console.log("🔹 OpenAI Raw Response:", response); // ✅ Debugging Log
+      const response = await fetchFitnessHouse(userData); // Now Gemini only
+      console.log("🔹 Gemini Raw Response:", response); // ✅ Debugging Log
 
       if (!response || typeof response !== "object") {
-        throw new Error("Invalid response format from OpenAI");
+        throw new Error("Invalid response format from Gemini");
       }
 
       if (!response.house) {
@@ -95,7 +96,7 @@ const SelectionScreen = ({ route }) => {
       });
 
     } catch (error) {
-      console.error("❌ Error fetching OpenAI response:", error);
+      console.error("❌ Error fetching Gemini response:", error);
       alert("Error processing your request. Please try again.");
     } finally {
       setLoading(false); // ✅ Hide Loading Indicator
@@ -124,7 +125,7 @@ const SelectionScreen = ({ route }) => {
                 key={index}
                 style={[
                   styles.optionButton,
-                  selectedOptions.includes(option.label) && styles.selectedOption,
+                  (Array.isArray(selectedOptions) && selectedOptions.includes(option.label)) && styles.selectedOption,
                   { width: option.size, height: option.size },
                 ]}
                 onPress={() => toggleOption(option)}
@@ -137,6 +138,10 @@ const SelectionScreen = ({ route }) => {
 
         <TouchableOpacity onPress={handleNext} style={styles.nextButton} disabled={loading}>
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.nextButtonText}>Next</Text>}
+        </TouchableOpacity>
+        
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
       </View>
     </ImageBackground>
@@ -215,6 +220,22 @@ const styles = StyleSheet.create({
   },
   nextButtonText: {
     color: '#fff',
+    textAlign: 'center',
+    fontSize: 18,
+  },
+  backButton: {
+    backgroundColor: 'transparent',
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 10,
+    width: 331,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#03C988',
+  },
+  backButtonText: {
+    color: '#03C988',
     textAlign: 'center',
     fontSize: 18,
   },

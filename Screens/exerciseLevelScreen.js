@@ -49,6 +49,10 @@ const ExerciseLevelScreen = ({ navigation, route }) => {
         <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
           <Text style={styles.nextButtonText}>Next</Text>
         </TouchableOpacity>
+        
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>Back</Text>
+        </TouchableOpacity>
       </View>
     </ImageBackground>
   );
@@ -120,6 +124,19 @@ const styles = StyleSheet.create({
   },
   nextButtonText: {
     color: '#fff',
+    fontSize: 18,
+  },
+  backButton: {
+    backgroundColor: 'transparent',
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#03C988',
+  },
+  backButtonText: {
+    color: '#03C988',
     fontSize: 18,
   },
 });

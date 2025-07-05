@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, Linking } from 'react-native';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../../constants';
+import YoutubePlayer from 'react-native-youtube-iframe';
 
 const Message = ({ 
   message, 
@@ -15,7 +16,7 @@ const Message = ({
 
   const handleTutorialPress = () => {
     if (message.youtubeLink) {
-      Linking.openURL(message.youtubeLink);
+      setShowTutorial((prev) => !prev);
     } else {
       onTutorial();
     }
@@ -28,6 +29,7 @@ const Message = ({
           source={{ uri: message.imageUri }} 
           style={styles.messageImage}
           resizeMode="cover"
+          accessibilityLabel="User sent image"
         />
       );
     }
@@ -45,6 +47,7 @@ const Message = ({
   if (isUser) {
     return (
       <View style={styles.userMessageContainer}>
+        <Image source={require('../../assets/user.png')} style={styles.profilePic} accessibilityLabel="User avatar" />
         <View style={styles.userMessage}>
           {renderMessageContent()}
         </View>
@@ -54,7 +57,7 @@ const Message = ({
 
   return (
     <View style={styles.trainerMessageContainer}>
-      <Image source={trainerAvatar} style={styles.trainerAvatar} />
+      <Image source={trainerAvatar} style={styles.trainerAvatar} accessibilityLabel="Trainer avatar" />
       <View style={styles.trainerMessage}>
         {renderMessageContent()}
         
@@ -100,10 +103,28 @@ const Message = ({
             <Text style={styles.pointsText}>+{message.points} points</Text>
           </View>
         )}
+
+        {showTutorial && message.youtubeLink && (
+          <View style={{ marginTop: 12, borderRadius: 12, overflow: 'hidden' }}>
+            <YoutubePlayer
+              height={124}
+              width={220}
+              play={true}
+              videoId={getYoutubeId(message.youtubeLink)}
+              webViewStyle={{ borderRadius: 12 }}
+              initialPlayerParams={{ controls: true, modestbranding: true }}
+            />
+          </View>
+        )}
       </View>
     </View>
   );
 };
+
+function getYoutubeId(url) {
+  const match = url.match(/(?:youtu.be\/|youtube.com\/(?:watch\?v=|embed\/|v\/|shorts\/)?)([\w-]{11})/);
+  return match ? match[1] : null;
+}
 
 const styles = StyleSheet.create({
   userMessageContainer: {
@@ -208,6 +229,12 @@ const styles = StyleSheet.create({
     color: COLORS.BLACK,
     fontSize: FONT_SIZES.SM,
     fontWeight: 'bold',
+  },
+  profilePic: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: SPACING.SM,
   },
 });
 

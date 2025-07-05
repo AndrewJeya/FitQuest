@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
-import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../../constants';
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES, TYPOGRAPHY } from '../../constants';
 import ProgressBar from '../common/ProgressBar';
 
 const DataCard = ({
@@ -14,12 +14,18 @@ const DataCard = ({
   valueStyle,
   iconStyle,
 }) => {
+  const isEmoji = typeof icon === 'string' && icon.length <= 2;
+  
   return (
     <View style={[styles.container, style]}>
       <View style={styles.header}>
         <Text style={[styles.title, titleStyle]}>{title}</Text>
         {icon && (
-          <Image source={icon} style={[styles.icon, iconStyle]} />
+          isEmoji ? (
+            <Text style={[styles.emojiIcon, iconStyle]}>{icon}</Text>
+          ) : (
+            <Image source={icon} style={[styles.icon, iconStyle]} />
+          )
         )}
       </View>
       
@@ -44,28 +50,35 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.LG,
     padding: SPACING.MD,
     minHeight: 100,
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: SPACING.SM,
+    width: '100%',
   },
   title: {
     color: COLORS.WHITE,
-    fontSize: FONT_SIZES.MD,
-    fontWeight: 'bold',
+    ...TYPOGRAPHY.BODY_SMALL,
+    textAlign: 'center',
   },
   icon: {
     height: 26,
     width: 26,
   },
+  emojiIcon: {
+    fontSize: FONT_SIZES.LG,
+  },
   progressBar: {
-    marginTop: SPACING.LG,
+    marginTop: SPACING.MD,
+    width: '100%',
   },
   value: {
     color: COLORS.WHITE,
-    fontSize: FONT_SIZES.SM,
+    ...TYPOGRAPHY.HEADING_3,
+    textAlign: 'center',
     marginTop: SPACING.SM,
   },
 });

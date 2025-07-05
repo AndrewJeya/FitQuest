@@ -25,9 +25,9 @@ fitquest/
 ## 🎯 Key Features
 
 - **House System**: Users sorted into Nova, Lumina, or Valor houses
-- **AI Personal Trainers**: Customized fitness guidance with OpenAI integration
+- **AI Personal Trainers**: Customized fitness guidance with Gemini integration
 - **Gamified Experience**: Points system, daily tasks, progress tracking
-- **Real-time Chat**: Interactive AI conversations with personalized responses
+- **Real-time Chat**: Interactive AI conversations with Gemini-powered personalized responses
 - **Camera Integration**: Meal verification and photo sharing
 - **Progress Tracking**: Weekly progress, daily goals, and achievements
 
@@ -121,7 +121,7 @@ npm run android
 ### Environment Setup
 Create a `.env` file with:
 ```
-OPENAI_API_KEY=your_openai_api_key
+GEMINI_API_KEY=your_gemini_api_key
 FIREBASE_API_KEY=your_firebase_api_key
 FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
 FIREBASE_PROJECT_ID=your_firebase_project_id

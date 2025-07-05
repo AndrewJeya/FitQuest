@@ -95,8 +95,8 @@ const UserInfoScreen = ({ route, navigation }) => {
             </View>
 
             <View style={styles.bottomContainer}>
-              <TouchableOpacity onPress={() => navigation.goBack()}>
-                <Text style={styles.linkText}>Go back</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.linkText}>Back to Login</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

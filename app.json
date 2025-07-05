@@ -32,7 +32,7 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "openAI_API_KEY": ""
+      
     },
     "plugins": [
       "expo-video",

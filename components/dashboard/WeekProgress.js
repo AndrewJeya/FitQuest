@@ -1,16 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES, WEEK_DAYS } from '../../constants';
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES, WEEK_DAYS, TYPOGRAPHY } from '../../constants';
 
 const WeekProgress = ({
-  progressData = {},
+  progressData = [],
   style,
   dayStyle,
   progressStyle,
   textStyle,
 }) => {
   const renderDay = (day) => {
-    const progress = progressData[day.key] || 0;
+    const dayData = progressData.find(d => typeof d.day === 'string' && d.day.toLowerCase().includes(day.key.slice(0, 2)));
+    const progress = dayData ? dayData.progress : 0;
     const isToday = day.key === getCurrentDayKey();
     
     const dayContainerStyle = [
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
   },
   dayText: {
     color: COLORS.WHITE,
-    fontSize: FONT_SIZES.SM,
+    ...TYPOGRAPHY.BODY_SMALL,
   },
   progressContainer: {
     backgroundColor: COLORS.BACKGROUND.PROGRESS,
@@ -97,11 +98,11 @@ const styles = StyleSheet.create({
   },
   progressText: {
     color: COLORS.WHITE,
-    fontSize: FONT_SIZES.XS,
+    ...TYPOGRAPHY.CAPTION,
   },
   todayProgressText: {
     color: COLORS.PRIMARY,
-    fontWeight: 'bold',
+    ...TYPOGRAPHY.CAPTION_BOLD,
   },
 });
 
