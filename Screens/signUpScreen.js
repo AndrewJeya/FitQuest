@@ -127,6 +127,7 @@ const SignUpScreen = ({ navigation }) => {
               textContentType="name"
             />
             {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+            }
 
             <Text style={styles.label}>Email address</Text>
             <TextInput
@@ -144,6 +145,7 @@ const SignUpScreen = ({ navigation }) => {
               textContentType="emailAddress"
             />
             {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+            }
 
             <Text style={styles.label}>Password</Text>
             <TextInput
@@ -160,6 +162,7 @@ const SignUpScreen = ({ navigation }) => {
               textContentType="password"
             />
             {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+            }
 
             <TouchableOpacity 
               style={[styles.button, isLoading ? styles.buttonDisabled : null]} 

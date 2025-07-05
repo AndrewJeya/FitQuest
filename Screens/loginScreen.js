@@ -231,6 +231,7 @@ const LoginScreen = ({ navigation }) => {
                 />
               </View>
               {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+              }
               
               <Text style={styles.label}>Password</Text>
               <View style={[styles.inputContainer, passwordError ? styles.inputError : null]}>
@@ -258,6 +259,7 @@ const LoginScreen = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
               {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+              }
               
               <TouchableOpacity 
                 style={[styles.button, isLoading ? styles.buttonDisabled : null]} 
