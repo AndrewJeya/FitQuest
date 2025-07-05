@@ -1,5 +1,27 @@
+import { Platform } from 'react-native';
+import { getFontFamily } from '../utils/fontLoader';
+
 // App Constants
 export const APP_NAME = 'FitQuest';
+
+// Font Families
+export const FONTS = {
+  DISPLAY: getFontFamily('CircularStd-Bold', 'System'), // For headers, titles, and display text
+  DISPLAY_MEDIUM: getFontFamily('CircularStd-Medium', 'System'), // For medium weight display text
+  DISPLAY_REGULAR: getFontFamily('CircularStd-Regular', 'System'), // For regular weight display text
+  BODY: getFontFamily('SFProText-Regular', 'System'), // For regular body text
+  BODY_MEDIUM: getFontFamily('SFProText-Medium', 'System'), // For medium weight body text
+  BODY_BOLD: getFontFamily('SFProText-Bold', 'System'), // For bold body text
+  BODY_SEMIBOLD: getFontFamily('SFProText-Semibold', 'System'), // For semibold body text
+};
+
+// Font Weights (for platforms that don't support custom fonts)
+export const FONT_WEIGHTS = {
+  REGULAR: '400',
+  MEDIUM: '500',
+  SEMIBOLD: '600',
+  BOLD: '700',
+};
 
 // House Constants
 export const HOUSES = {
@@ -15,7 +37,8 @@ export const HOUSE_CONFIG = {
     focus: 'Agility, HIIT, and structured progress tracking',
     background: require('../assets/novaBG.mp4'),
     avatar: require('../assets/novaAI.png'),
-    crest: require('../assets/houseofnova.png')
+    crest: require('../assets/houseofnova.png'),
+    trainerProfile: require('../assets/novaPP.png')
   },
   [HOUSES.LUMINA]: {
     name: 'House of Lumina',
@@ -23,7 +46,8 @@ export const HOUSE_CONFIG = {
     focus: 'Flexibility, mindfulness, and holistic well-being',
     background: require('../assets/luminaBG.mp4'),
     avatar: require('../assets/luminaAI.png'),
-    crest: require('../assets/houseoflumina.png')
+    crest: require('../assets/houseoflumina.png'),
+    trainerProfile: require('../assets/luminaPP.png')
   },
   [HOUSES.VALOR]: {
     name: 'House of Valor',
@@ -31,7 +55,8 @@ export const HOUSE_CONFIG = {
     focus: 'Strength, endurance, and resilience',
     background: require('../assets/valorBG.mp4'),
     avatar: require('../assets/valorAI.png'),
-    crest: require('../assets/houseofvalor.png')
+    crest: require('../assets/houseofvalor.png'),
+    trainerProfile: require('../assets/valorPP.png')
   }
 };
 
@@ -92,7 +117,102 @@ export const FONT_SIZES = {
   LG: 18,
   XL: 20,
   XXL: 24,
-  XXXL: 28
+  XXXL: 28,
+  DISPLAY_SM: 32,
+  DISPLAY_MD: 36,
+  DISPLAY_LG: 42,
+  DISPLAY_XL: 48
+};
+
+// Typography Styles
+export const TYPOGRAPHY = {
+  // Display styles (using Circular Std)
+  DISPLAY_LARGE: {
+    fontFamily: FONTS.DISPLAY,
+    fontSize: FONT_SIZES.DISPLAY_XL,
+    fontWeight: FONT_WEIGHTS.BOLD,
+  },
+  DISPLAY_MEDIUM: {
+    fontFamily: FONTS.DISPLAY,
+    fontSize: FONT_SIZES.DISPLAY_LG,
+    fontWeight: FONT_WEIGHTS.BOLD,
+  },
+  DISPLAY_SMALL: {
+    fontFamily: FONTS.DISPLAY,
+    fontSize: FONT_SIZES.DISPLAY_MD,
+    fontWeight: FONT_WEIGHTS.BOLD,
+  },
+  HEADING_1: {
+    fontFamily: FONTS.DISPLAY,
+    fontSize: FONT_SIZES.XXXL,
+    fontWeight: FONT_WEIGHTS.BOLD,
+  },
+  HEADING_2: {
+    fontFamily: FONTS.DISPLAY,
+    fontSize: FONT_SIZES.XXL,
+    fontWeight: FONT_WEIGHTS.BOLD,
+  },
+  HEADING_3: {
+    fontFamily: FONTS.DISPLAY,
+    fontSize: FONT_SIZES.XL,
+    fontWeight: FONT_WEIGHTS.SEMIBOLD,
+  },
+  HEADING_4: {
+    fontFamily: FONTS.DISPLAY,
+    fontSize: FONT_SIZES.LG,
+    fontWeight: FONT_WEIGHTS.SEMIBOLD,
+  },
+  
+  // Body styles (using SF Pro)
+  BODY_LARGE: {
+    fontFamily: FONTS.BODY,
+    fontSize: FONT_SIZES.LG,
+    fontWeight: FONT_WEIGHTS.REGULAR,
+  },
+  BODY_MEDIUM: {
+    fontFamily: FONTS.BODY,
+    fontSize: FONT_SIZES.MD,
+    fontWeight: FONT_WEIGHTS.REGULAR,
+  },
+  BODY_SMALL: {
+    fontFamily: FONTS.BODY,
+    fontSize: FONT_SIZES.SM,
+    fontWeight: FONT_WEIGHTS.REGULAR,
+  },
+  BODY_XSMALL: {
+    fontFamily: FONTS.BODY,
+    fontSize: FONT_SIZES.XS,
+    fontWeight: FONT_WEIGHTS.REGULAR,
+  },
+  
+  // Button styles
+  BUTTON_LARGE: {
+    fontFamily: FONTS.BODY_BOLD,
+    fontSize: FONT_SIZES.LG,
+    fontWeight: FONT_WEIGHTS.BOLD,
+  },
+  BUTTON_MEDIUM: {
+    fontFamily: FONTS.BODY_BOLD,
+    fontSize: FONT_SIZES.MD,
+    fontWeight: FONT_WEIGHTS.BOLD,
+  },
+  BUTTON_SMALL: {
+    fontFamily: FONTS.BODY_BOLD,
+    fontSize: FONT_SIZES.SM,
+    fontWeight: FONT_WEIGHTS.BOLD,
+  },
+  
+  // Caption styles
+  CAPTION: {
+    fontFamily: FONTS.BODY,
+    fontSize: FONT_SIZES.XS,
+    fontWeight: FONT_WEIGHTS.REGULAR,
+  },
+  CAPTION_BOLD: {
+    fontFamily: FONTS.BODY_BOLD,
+    fontSize: FONT_SIZES.XS,
+    fontWeight: FONT_WEIGHTS.BOLD,
+  },
 };
 
 // Week Days

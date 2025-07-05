@@ -31,18 +31,23 @@ class NotificationService {
       }
       
       if (finalStatus !== 'granted') {
-        console.log('Failed to get push token for push notification!');
+        // console.log('Failed to get push token for push notification!');
         return false;
       }
 
-      // Get push token
+      // Get push token (only if we have a valid project ID)
       if (Device.isDevice) {
-        this.expoPushToken = (await Notifications.getExpoPushTokenAsync({
-          projectId: 'your-project-id', // Replace with your Expo project ID
-        })).data;
-        console.log('Push token:', this.expoPushToken);
+        try {
+          this.expoPushToken = (await Notifications.getExpoPushTokenAsync({
+            projectId: 'fitquest-4d05a', // Use your actual Expo project ID
+          })).data;
+          // console.log('Push token:', this.expoPushToken);
+        } catch (tokenError) {
+          // console.log('Could not get push token (this is normal in Expo Go):', tokenError.message);
+          // Continue without push token for local notifications
+        }
       } else {
-        console.log('Must use physical device for Push Notifications');
+        // console.log('Must use physical device for Push Notifications');
       }
 
       // Set up notification listeners
@@ -59,12 +64,12 @@ class NotificationService {
   setupNotificationListeners() {
     // Listen for incoming notifications
     this.notificationListener = Notifications.addNotificationReceivedListener(notification => {
-      console.log('Notification received:', notification);
+      // console.log('Notification received:', notification);
     });
 
     // Listen for notification responses (when user taps notification)
     this.responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Notification response:', response);
+      // console.log('Notification response:', response);
       this.handleNotificationResponse(response);
     });
   }
@@ -76,23 +81,23 @@ class NotificationService {
     switch (data.type) {
       case 'task_reminder':
         // Navigate to task or open app
-        console.log('Task reminder tapped:', data.taskTitle);
+        // console.log('Task reminder tapped:', data.taskTitle);
         break;
       case 'exercise_reminder':
         // Navigate to chat or specific exercise
-        console.log('Exercise reminder tapped:', data.exerciseName);
+        // console.log('Exercise reminder tapped:', data.exerciseName);
         break;
       case 'daily_checkin':
         // Navigate to dashboard
-        console.log('Daily checkin reminder tapped');
+        // console.log('Daily checkin reminder tapped');
         break;
       default:
-        console.log('Unknown notification type:', data.type);
+        // console.log('Unknown notification type:', data.type);
     }
   }
 
   // Schedule task reminder
-  async scheduleTaskReminder(task, userId) {
+  async scheduleTaskReminder(task, userId, trainerIcon = null) {
     try {
       const { time, title, emoji } = task;
       
@@ -100,35 +105,42 @@ class NotificationService {
       const scheduledTime = this.parseTimeToDate(time);
       
       if (!scheduledTime) {
-        console.error('Invalid time format:', time);
+        // console.error('Invalid time format:', time);
         return false;
       }
 
       // Don't schedule if time has already passed today
       if (scheduledTime <= new Date()) {
-        console.log('Task time has already passed today:', time);
+        // console.log('Task time has already passed today:', time);
         return false;
       }
 
-      const identifier = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `${emoji} Task Reminder`,
-          body: `Time to complete: ${title}`,
-          data: {
-            type: 'task_reminder',
-            taskTitle: title,
-            userId: userId,
-            taskTime: time
-          },
-          sound: 'default',
-          priority: Notifications.AndroidNotificationPriority.HIGH,
+      const notificationContent = {
+        title: `${emoji} Task Reminder`,
+        body: `Time to complete: ${title}`,
+        data: {
+          type: 'task_reminder',
+          taskTitle: title,
+          userId: userId,
+          taskTime: time
         },
+        sound: 'default',
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+      };
+
+      // Add trainer icon if provided
+      if (trainerIcon) {
+        notificationContent.icon = trainerIcon;
+      }
+
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: notificationContent,
         trigger: {
           date: scheduledTime,
         },
       });
 
-      console.log('Task reminder scheduled:', identifier, 'for', scheduledTime);
+      // console.log('Task reminder scheduled:', identifier, 'for', scheduledTime);
       return identifier;
     } catch (error) {
       console.error('Error scheduling task reminder:', error);
@@ -137,29 +149,36 @@ class NotificationService {
   }
 
   // Schedule exercise reminder
-  async scheduleExerciseReminder(exercise, userId, delayMinutes = 30) {
+  async scheduleExerciseReminder(exercise, userId, delayMinutes = 30, trainerIcon = null) {
     try {
       const scheduledTime = new Date(Date.now() + delayMinutes * 60 * 1000);
 
-      const identifier = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '🏋️‍♂️ Exercise Time!',
-          body: `Ready for ${exercise.exercise}? ${exercise.sets} sets × ${exercise.reps} reps`,
-          data: {
-            type: 'exercise_reminder',
-            exerciseName: exercise.exercise,
-            exerciseDetails: exercise,
-            userId: userId
-          },
-          sound: 'default',
-          priority: Notifications.AndroidNotificationPriority.HIGH,
+      const notificationContent = {
+        title: '🏋️‍♂️ Exercise Time!',
+        body: `Ready for ${exercise.exercise}? ${exercise.sets} sets × ${exercise.reps} reps`,
+        data: {
+          type: 'exercise_reminder',
+          exerciseName: exercise.exercise,
+          exerciseDetails: exercise,
+          userId: userId
         },
+        sound: 'default',
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+      };
+
+      // Add trainer icon if provided
+      if (trainerIcon) {
+        notificationContent.icon = trainerIcon;
+      }
+
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: notificationContent,
         trigger: {
           date: scheduledTime,
         },
       });
 
-      console.log('Exercise reminder scheduled:', identifier, 'for', scheduledTime);
+      // console.log('Exercise reminder scheduled:', identifier, 'for', scheduledTime);
       return identifier;
     } catch (error) {
       console.error('Error scheduling exercise reminder:', error);
@@ -168,21 +187,28 @@ class NotificationService {
   }
 
   // Schedule daily checkin reminder
-  async scheduleDailyCheckin(userId, hour = 9, minute = 0) {
+  async scheduleDailyCheckin(userId, hour = 9, minute = 0, trainerIcon = null) {
     try {
       const scheduledTime = this.getNextOccurrence(hour, minute);
 
-      const identifier = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '🌟 Daily Fitness Check-in',
-          body: 'How are you feeling today? Let\'s check your progress!',
-          data: {
-            type: 'daily_checkin',
-            userId: userId
-          },
-          sound: 'default',
-          priority: Notifications.AndroidNotificationPriority.DEFAULT,
+      const notificationContent = {
+        title: '🌟 Daily Fitness Check-in',
+        body: 'How are you feeling today? Let\'s check your progress!',
+        data: {
+          type: 'daily_checkin',
+          userId: userId
         },
+        sound: 'default',
+        priority: Notifications.AndroidNotificationPriority.DEFAULT,
+      };
+
+      // Add trainer icon if provided
+      if (trainerIcon) {
+        notificationContent.icon = trainerIcon;
+      }
+
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: notificationContent,
         trigger: {
           hour: hour,
           minute: minute,
@@ -190,7 +216,7 @@ class NotificationService {
         },
       });
 
-      console.log('Daily checkin scheduled:', identifier);
+      // console.log('Daily checkin scheduled:', identifier);
       return identifier;
     } catch (error) {
       console.error('Error scheduling daily checkin:', error);
@@ -199,22 +225,29 @@ class NotificationService {
   }
 
   // Schedule meal reminder
-  async scheduleMealReminder(mealType, userId, hour, minute) {
+  async scheduleMealReminder(mealType, userId, hour, minute, trainerIcon = null) {
     try {
       const scheduledTime = this.getNextOccurrence(hour, minute);
 
-      const identifier = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `🍽️ ${mealType} Time`,
-          body: `Don't forget to log your ${mealType.toLowerCase()} for accurate calorie tracking!`,
-          data: {
-            type: 'meal_reminder',
-            mealType: mealType,
-            userId: userId
-          },
-          sound: 'default',
-          priority: Notifications.AndroidNotificationPriority.MEDIUM,
+      const notificationContent = {
+        title: `🍽️ ${mealType} Time`,
+        body: `Don't forget to log your ${mealType.toLowerCase()} for accurate calorie tracking!`,
+        data: {
+          type: 'meal_reminder',
+          mealType: mealType,
+          userId: userId
         },
+        sound: 'default',
+        priority: Notifications.AndroidNotificationPriority.MEDIUM,
+      };
+
+      // Add trainer icon if provided
+      if (trainerIcon) {
+        notificationContent.icon = trainerIcon;
+      }
+
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: notificationContent,
         trigger: {
           hour: hour,
           minute: minute,
@@ -222,7 +255,7 @@ class NotificationService {
         },
       });
 
-      console.log(`${mealType} reminder scheduled:`, identifier);
+      // console.log(`${mealType} reminder scheduled:`, identifier);
       return identifier;
     } catch (error) {
       console.error('Error scheduling meal reminder:', error);
@@ -231,26 +264,33 @@ class NotificationService {
   }
 
   // Schedule water reminder
-  async scheduleWaterReminder(userId, intervalHours = 2) {
+  async scheduleWaterReminder(userId, intervalHours = 2, trainerIcon = null) {
     try {
-      const identifier = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '💧 Stay Hydrated!',
-          body: 'Time to drink some water and stay healthy!',
-          data: {
-            type: 'water_reminder',
-            userId: userId
-          },
-          sound: 'default',
-          priority: Notifications.AndroidNotificationPriority.MEDIUM,
+      const notificationContent = {
+        title: '💧 Stay Hydrated!',
+        body: 'Time to drink some water and stay healthy!',
+        data: {
+          type: 'water_reminder',
+          userId: userId
         },
+        sound: 'default',
+        priority: Notifications.AndroidNotificationPriority.MEDIUM,
+      };
+
+      // Add trainer icon if provided
+      if (trainerIcon) {
+        notificationContent.icon = trainerIcon;
+      }
+
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: notificationContent,
         trigger: {
           seconds: intervalHours * 3600, // Convert hours to seconds
           repeats: true,
         },
       });
 
-      console.log('Water reminder scheduled:', identifier);
+      // console.log('Water reminder scheduled:', identifier);
       return identifier;
     } catch (error) {
       console.error('Error scheduling water reminder:', error);
@@ -297,18 +337,18 @@ class NotificationService {
   }
 
   // Schedule all daily tasks
-  async scheduleDailyTasks(tasks, userId) {
+  async scheduleDailyTasks(tasks, userId, trainerIcon = null) {
     try {
       const scheduledIds = [];
 
       for (const task of tasks) {
-        const identifier = await this.scheduleTaskReminder(task, userId);
+        const identifier = await this.scheduleTaskReminder(task, userId, trainerIcon);
         if (identifier) {
           scheduledIds.push(identifier);
         }
       }
 
-      console.log('Scheduled', scheduledIds.length, 'daily tasks');
+      // console.log('Scheduled', scheduledIds.length, 'daily tasks');
       return scheduledIds;
     } catch (error) {
       console.error('Error scheduling daily tasks:', error);
@@ -320,7 +360,7 @@ class NotificationService {
   async cancelNotification(identifier) {
     try {
       await Notifications.cancelScheduledNotificationAsync(identifier);
-      console.log('Cancelled notification:', identifier);
+      // console.log('Cancelled notification:', identifier);
       return true;
     } catch (error) {
       console.error('Error cancelling notification:', error);
@@ -332,7 +372,7 @@ class NotificationService {
   async cancelAllNotifications() {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
-      console.log('Cancelled all notifications');
+      // console.log('Cancelled all notifications');
       return true;
     } catch (error) {
       console.error('Error cancelling all notifications:', error);
@@ -344,7 +384,7 @@ class NotificationService {
   async getScheduledNotifications() {
     try {
       const notifications = await Notifications.getAllScheduledNotificationsAsync();
-      console.log('Scheduled notifications:', notifications);
+      // console.log('Scheduled notifications:', notifications);
       return notifications;
     } catch (error) {
       console.error('Error getting scheduled notifications:', error);

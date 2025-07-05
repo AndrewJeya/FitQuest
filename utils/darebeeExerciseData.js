@@ -185,9 +185,11 @@ export const findExerciseByName = (exerciseName) => {
   // Partial match
   const partialMatch = DAREBEE_EXERCISES.find(
     exercise => 
-      exercise.exercise.toLowerCase().includes(normalizedName) ||
-      normalizedName.includes(exercise.exercise.toLowerCase()) ||
-      exercise.title.toLowerCase().includes(normalizedName)
+      exercise.exercise && (
+        (exercise.exercise && typeof exercise.exercise === 'string' && exercise.exercise.toLowerCase().includes(normalizedName)) ||
+        (typeof normalizedName === 'string' && normalizedName.includes(exercise.exercise?.toLowerCase?.() || '')) ||
+        (exercise.title && typeof exercise.title === 'string' && exercise.title.toLowerCase().includes(normalizedName))
+      )
   );
   
   return partialMatch || null;
@@ -215,10 +217,10 @@ export const searchExercises = (searchTerm) => {
   const normalizedSearch = searchTerm.toLowerCase();
   
   return DAREBEE_EXERCISES.filter(exercise =>
-    exercise.exercise.toLowerCase().includes(normalizedSearch) ||
-    exercise.title.toLowerCase().includes(normalizedSearch) ||
-    exercise.description.toLowerCase().includes(normalizedSearch) ||
-    exercise.muscle_groups.toLowerCase().includes(normalizedSearch)
+    (exercise.exercise && typeof exercise.exercise === 'string' && exercise.exercise.toLowerCase().includes(normalizedSearch)) ||
+    (exercise.title && typeof exercise.title === 'string' && exercise.title.toLowerCase().includes(normalizedSearch)) ||
+    (exercise.description && typeof exercise.description === 'string' && exercise.description.toLowerCase().includes(normalizedSearch)) ||
+    (exercise.muscle_groups && typeof exercise.muscle_groups === 'string' && exercise.muscle_groups.toLowerCase().includes(normalizedSearch))
   );
 };
 

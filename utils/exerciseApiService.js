@@ -259,8 +259,8 @@ export const findExerciseByName = (exerciseName, exercises = FALLBACK_EXERCISES)
   // Partial match
   const partialMatch = exercises.find(
     exercise => 
-      exercise.name.toLowerCase().includes(normalizedName) ||
-      normalizedName.includes(exercise.name.toLowerCase())
+      (exercise.name && typeof exercise.name === 'string' && exercise.name.toLowerCase().includes(normalizedName)) ||
+      (typeof normalizedName === 'string' && normalizedName.includes(exercise.name?.toLowerCase?.() || ''))
   );
   
   return partialMatch || null;
