@@ -1,8 +1,8 @@
 // screens/SignUpScreen.js
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Alert } from 'react-native';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { db } from '../firebaseConfig';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { db, auth } from '../firebaseConfig';
 import { ref, set } from 'firebase/database';
 
 const SignUpScreen = ({ navigation }) => {
@@ -21,7 +21,6 @@ const SignUpScreen = ({ navigation }) => {
       return;
     }
 
-    const auth = getAuth();
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
@@ -52,62 +51,62 @@ const SignUpScreen = ({ navigation }) => {
   };
 
   return (
-    <ImageBackground
-      source={require('../assets/signupBG.png')}
-      style={styles.backgroundImage}
-    >
-      <View style={styles.container}>
-        <View style={styles.centeredContent}>
-          <View style={styles.stepperContainer}>
-            <View style={[styles.step, styles.activeStep]} />
-            <View style={[styles.step, styles.inactiveStep]} />
-            <View style={[styles.step, styles.inactiveStep]} />
-            <View style={[styles.step, styles.inactiveStep]} />
-          </View>
+      <ImageBackground
+        source={require('../assets/signupBG.png')}
+        style={styles.backgroundImage}
+      >
+        <View style={styles.container}>
+          <View style={styles.centeredContent}>
+            <View style={styles.stepperContainer}>
+              <View style={[styles.step, styles.activeStep]} />
+              <View style={[styles.step, styles.inactiveStep]} />
+              <View style={[styles.step, styles.inactiveStep]} />
+              <View style={[styles.step, styles.inactiveStep]} />
+            </View>
 
-          <Text style={styles.title}>Let's create an account</Text>
+            <Text style={styles.title}>Let's create an account</Text>
 
-          <Text style={styles.label}>Name</Text>
-          <TextInput
+            <Text style={styles.label}>Name</Text>
+            <TextInput
             style={styles.input}
-            placeholder="Type your first and last name"
-            placeholderTextColor="#888"
-            value={name}
+              placeholder="Type your first and last name"
+              placeholderTextColor="#888"
+              value={name}
             onChangeText={setName}
           />
 
-          <Text style={styles.label}>Email address</Text>
-          <TextInput
+            <Text style={styles.label}>Email address</Text>
+            <TextInput
             style={styles.input}
-            placeholder="Type your email"
-            placeholderTextColor="#888"
-            value={email}
+              placeholder="Type your email"
+              placeholderTextColor="#888"
+              value={email}
             onChangeText={setEmail}
-            keyboardType="email-address"
-          />
+              keyboardType="email-address"
+            />
 
-          <Text style={styles.label}>Password</Text>
-          <TextInput
+            <Text style={styles.label}>Password</Text>
+            <TextInput
             style={styles.input}
-            placeholder="Type your password"
-            placeholderTextColor="#888"
-            value={password}
+              placeholder="Type your password"
+              placeholderTextColor="#888"
+              value={password}
             onChangeText={setPassword}
-            secureTextEntry
+              secureTextEntry
           />
 
           <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-            <Text style={styles.buttonText}>Sign up</Text>
-          </TouchableOpacity>
-        </View>
+                <Text style={styles.buttonText}>Sign up</Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.bottomContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <View style={styles.bottomContainer}>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
             <Text style={styles.linkText}>Already have an account? Signin</Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </ImageBackground>
+      </ImageBackground>
   );
 };
 

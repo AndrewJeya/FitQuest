@@ -1,79 +1,61 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../constants';
+import { COLORS, BORDER_RADIUS, SPACING } from '../../constants';
 
 const Card = ({
   children,
-  variant = 'default',
-  padding = 'medium',
+  variant = 'solid', // 'solid', 'glass', 'outline'
+  padding = 'md', // 'sm', 'md', 'lg', 'none'
   style,
   ...props
 }) => {
-  const cardStyle = [
-    styles.card,
-    styles[variant],
-    styles[`padding${capitalizeFirst(padding)}`],
-    style
-  ];
-
+  const variantStyles = {
+    solid: styles.solid,
+    glass: styles.glass,
+    outline: styles.outline,
+  };
+  const paddingStyles = {
+    none: {},
+    sm: { padding: SPACING.SM },
+    md: { padding: SPACING.MD },
+    lg: { padding: SPACING.LG },
+  };
   return (
-    <View style={cardStyle} {...props}>
+    <View
+      style={[
+        styles.base,
+        variantStyles[variant],
+        paddingStyles[padding],
+        style,
+      ]}
+      {...props}
+    >
       {children}
     </View>
   );
 };
 
-const capitalizeFirst = (str) => {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
-
 const styles = StyleSheet.create({
-  card: {
+  base: {
     borderRadius: BORDER_RADIUS.LG,
-    backgroundColor: COLORS.GRAY.CARD,
-    shadowColor: COLORS.BLACK,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    overflow: 'hidden',
   },
-  
-  // Variants
-  default: {
-    backgroundColor: COLORS.GRAY.CARD,
-  },
-  elevated: {
-    backgroundColor: COLORS.GRAY.CARD,
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  transparent: {
-    backgroundColor: 'transparent',
-    shadowOpacity: 0,
-    elevation: 0,
+  solid: {
+    backgroundColor: COLORS.BACKGROUND.CARD,
   },
   glass: {
-    backgroundColor: COLORS.BACKGROUND.CARD,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: 'rgba(255,255,255,0.16)',
+    shadowColor: COLORS.BLACK,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
   },
-  
-  // Padding variants
-  paddingSmall: {
-    padding: SPACING.SM,
-  },
-  paddingMedium: {
-    padding: SPACING.MD,
-  },
-  paddingLarge: {
-    padding: SPACING.LG,
-  },
-  paddingXLarge: {
-    padding: SPACING.XL,
+  outline: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: COLORS.PRIMARY,
   },
 });
 

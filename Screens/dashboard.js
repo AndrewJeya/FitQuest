@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { getAuth } from 'firebase/auth';
 import { ref, get } from 'firebase/database';
 import { db } from '../firebaseConfig';
+import { auth } from '../firebaseConfig';
 import LottieView from 'lottie-react-native';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES, DEFAULTS } from '../constants';
 import { formatDate } from '../utils/helpers';
 import { DataCard, TaskItem, WeekProgress } from '../components/dashboard';
 import { globalStyles } from '../styles/globalStyles';
 import notificationService from '../utils/notificationService';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const DashboardScreen = ({ route, navigation }) => {
     const [userPoints, setUserPoints] = useState(DEFAULTS.POINTS);
     const [userTasks, setUserTasks] = useState(DEFAULTS.TASKS);
     const [isLoading, setIsLoading] = useState(true);
-
+    
     const {
         userInfo = {},
         recommended_calories_per_day = DEFAULTS.CALORIES_PER_DAY,
@@ -26,15 +27,14 @@ const DashboardScreen = ({ route, navigation }) => {
     // Load user data from Firebase
     useEffect(() => {
         const loadUserData = async () => {
-            const auth = getAuth();
             const userId = auth.currentUser?.uid;
             
             if (!userId) {
                 setIsLoading(false);
-                return;
-            }
+            return;
+        }
 
-            try {
+        try {
                 // Load points
                 const pointsSnapshot = await get(ref(db, `users/${userId}/points`));
                 if (pointsSnapshot.exists()) {
@@ -49,12 +49,12 @@ const DashboardScreen = ({ route, navigation }) => {
                     if (lastMessage?.dailyTasks) {
                         setUserTasks(lastMessage.dailyTasks);
                     }
-                }
-            } catch (error) {
-                console.error('Error loading user data:', error);
-            } finally {
-                setIsLoading(false);
             }
+        } catch (error) {
+                console.error('Error loading user data:', error);
+        } finally {
+                setIsLoading(false);
+        }
         };
 
         loadUserData();
@@ -88,7 +88,6 @@ const DashboardScreen = ({ route, navigation }) => {
     };
 
     const handleChatNavigation = () => {
-        const auth = getAuth();
         const userId = auth.currentUser?.uid;
         
         if (!userId) {
@@ -147,7 +146,7 @@ const DashboardScreen = ({ route, navigation }) => {
                 </View>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                 <View style={styles.greetingSection}>
                     <View style={styles.greetingContent}>
                         <Text style={styles.date}>{formatDate()}</Text>
@@ -155,7 +154,8 @@ const DashboardScreen = ({ route, navigation }) => {
                         <Text style={styles.greetingText}>Let's conquer the day!</Text>
                         <View style={styles.goalsContainer}>
                             <Text style={styles.goalsText}>
-                                {goalsCompleted}/{totalGoals} goals completed
+                                <Text style={styles.goalsCompleted}>{goalsCompleted}</Text>
+                                <Text style={styles.goalsTotal}>/10 goals completed</Text>
                             </Text>
                         </View>
                     </View>
@@ -216,23 +216,9 @@ const DashboardScreen = ({ route, navigation }) => {
                 </View>
             </ScrollView>
 
-            <View style={styles.bottomBar}>
-                <TouchableOpacity 
-                    style={styles.trainerAIButton} 
-                    onPress={handleChatNavigation}
-                >
-                    <LottieView 
-                        style={styles.animationAI} 
-                        source={require('../assets/animationAI.json')} 
-                        autoPlay 
-                        loop 
-                    />
-                    <Image
-                        source={require('../assets/valorAI.png')}
-                        style={styles.bottomAvatar}
-                    />
-                </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.fab} onPress={handleChatNavigation}>
+                <Image source={require('../assets/chatBG.png')} style={styles.fabIcon} />
+            </TouchableOpacity>
         </View>
     );
 };
@@ -327,6 +313,10 @@ const styles = StyleSheet.create({
     },
     greetingContent: {},
     greetingVisual: {},
+    greetingProgress: {
+        width: 100,
+        height: 100,
+    },
     date: {
         color: 'rgba(245, 245, 245, 0.30)',
         fontSize: FONT_SIZES.MD,
@@ -343,11 +333,16 @@ const styles = StyleSheet.create({
     goalsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 16,
     },
     goalsText: {
         color: COLORS.SUCCESS,
         fontSize: FONT_SIZES.LG,
+    },
+    goalsCompleted: {
+        fontWeight: 'bold',
+    },
+    goalsTotal: {
+        fontWeight: 'normal',
     },
     dataCards: {
         flexDirection: 'row',
@@ -360,7 +355,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     dataCardRight: {
-        marginLeft: 16,
+        flex: 1,
     },
     todaysPlan: {
         padding: SPACING.MD,
@@ -379,36 +374,20 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         textAlign: 'center',
     },
-    bottomBar: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1,
-        backgroundColor: 'transparent',
-        paddingBottom: 30,
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-    },
-    trainerAIButton: {
-        width: 70,
-        height: 70,
+    fab: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: COLORS.PRIMARY,
         justifyContent: 'center',
         alignItems: 'center',
-        position: 'relative',
-        backgroundColor: 'transparent',
-    },
-    animationAI: {
-        ...StyleSheet.absoluteFillObject,
-        width: '100%',
-        height: '100%',
-    },
-    bottomAvatar: {
-        zIndex: 2,
-        height: 50,
-        width: 50,
-        borderRadius: 30,
         position: 'absolute',
+        bottom: 80,
+        right: 20,
+    },
+    fabIcon: {
+        width: 32,
+        height: 32,
     },
     loadingContainer: {
         flex: 1,
@@ -418,6 +397,9 @@ const styles = StyleSheet.create({
     loadingText: {
         color: COLORS.WHITE,
         fontSize: FONT_SIZES.MD,
+    },
+    scrollContent: {
+        paddingBottom: 20,
     },
 });
 

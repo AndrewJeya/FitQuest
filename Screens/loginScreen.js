@@ -1,9 +1,10 @@
 // screens/LoginScreen.js
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Alert,ActivityIndicator } from 'react-native';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { db } from '../firebaseConfig';
 import { ref, get } from 'firebase/database';
+import { auth } from '../firebaseConfig';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -17,7 +18,6 @@ const LoginScreen = ({ navigation }) => {
     }
 
     setIsLoading(true);
-    const auth = getAuth();
     
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -89,54 +89,54 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <ImageBackground
-      source={require('../assets/loginBG.png')}
-      style={styles.backgroundImage}
-    >
-      <View style={styles.container}>
-        <View style={styles.centeredContent}>
-          <Text style={styles.title}>Let's sign in to your account</Text>
-          
-          <Text style={styles.label}>Email address</Text>
-          <TextInput
+      <ImageBackground
+        source={require('../assets/loginBG.png')}
+        style={styles.backgroundImage}
+      >
+        <View style={styles.container}>
+          <View style={styles.centeredContent}>
+            <Text style={styles.title}>Let's sign in to your account</Text>
+            
+            <Text style={styles.label}>Email address</Text>
+            <TextInput
             style={styles.input}
-            placeholder="Type your email"
-            placeholderTextColor="#888"
-            value={email}
+              placeholder="Type your email"
+              placeholderTextColor="#888"
+              value={email}
             onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-          
-          <Text style={styles.label}>Password</Text>
-          <TextInput
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            
+            <Text style={styles.label}>Password</Text>
+            <TextInput
             style={styles.input}
-            placeholder="Type your password"
-            placeholderTextColor="#888"
-            value={password}
+              placeholder="Type your password"
+              placeholderTextColor="#888"
+              value={password}
             onChangeText={setPassword}
-            secureTextEntry
-          />
-          
-          <TouchableOpacity 
+              secureTextEntry
+            />
+            
+            <TouchableOpacity 
             style={styles.button} 
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
-            {isLoading ? (
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              {isLoading ? (
               <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Login</Text>
-            )}
-          </TouchableOpacity>
+              ) : (
+                <Text style={styles.buttonText}>Login</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+          <View style={styles.bottomContainer}>
+            <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+              <Text style={styles.linkText}>Don't have an account? Sign up</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.bottomContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-            <Text style={styles.linkText}>Don't have an account? Sign up</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </ImageBackground>
+      </ImageBackground>
   );
 };
 

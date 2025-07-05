@@ -232,10 +232,9 @@ const Chat = ({ route, navigation }) => {
       <View style={styles.topNavContainer}>
         <TouchableOpacity 
           style={styles.backButton} 
-          onPress={() => navigation.navigate('Dashboard', {
-            userInfo,
-            points,
-            tasks
+          onPress={() => navigation.navigate('MainTabs', {
+            screen: 'Home',
+            params: { userInfo, points, tasks }
           })}
         >
           <Image source={require('../assets/back-icon.png')} style={styles.backIcon} />

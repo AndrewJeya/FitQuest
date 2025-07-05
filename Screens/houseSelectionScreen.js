@@ -7,6 +7,8 @@ import { Button, Card } from '../components/common';
 import { globalStyles } from '../styles/globalStyles';
 import { set, ref } from 'firebase/database';
 import { db } from '../firebaseConfig';
+import { auth } from '../firebaseConfig';
+import SwipeButton from 'rn-swipe-button';
 
 const HouseSelectionScreen = ({ route, navigation }) => {
   const {
@@ -28,7 +30,6 @@ const HouseSelectionScreen = ({ route, navigation }) => {
   const houseConfig = getHouseConfig(normalizedHouse);
 
   const handleConfirmHouse = async () => {
-    const auth = getAuth();
     const userId = auth.currentUser?.uid;
     
     if (!userId) {
@@ -61,7 +62,7 @@ const HouseSelectionScreen = ({ route, navigation }) => {
       console.error('Error saving user data:', error);
     }
 
-    navigation.navigate('Chat', {
+    navigation.navigate('PostHouseLoading', {
       userId: userId,
       userInfo: completeUserData,
     });
@@ -122,11 +123,25 @@ const HouseSelectionScreen = ({ route, navigation }) => {
 
         {/* Confirm Button */}
         <View style={styles.buttonContainer}>
-          <Button
-            title="Confirm House"
-            onPress={handleConfirmHouse}
-            size="large"
-            style={styles.confirmButton}
+          <SwipeButton
+            containerStyles={{
+              width: '100%',
+              borderRadius: 16,
+              backgroundColor: '#23262A',
+              marginTop: 24,
+            }}
+            height={56}
+            railBackgroundColor="#23262A"
+            railBorderColor="#23262A"
+            railFillBackgroundColor="#03C988"
+            railFillBorderColor="#03C988"
+            thumbIconBackgroundColor="#03C988"
+            thumbIconBorderColor="#03C988"
+            title="Slide to confirm house"
+            titleColor="#fff"
+            titleFontSize={16}
+            onSwipeSuccess={handleConfirmHouse}
+            thumbIconImageSource={require('../assets/arrow_forward_ios.png')}
           />
         </View>
       </View>
@@ -177,18 +192,21 @@ const styles = StyleSheet.create({
     shadowColor: COLORS.BLACK,
     shadowOpacity: 0.25,
     shadowRadius: 24,
+    paddingVertical: SPACING.LG,
+    paddingHorizontal: SPACING.MD,
+    justifyContent: 'flex-start',
   },
   houseImage: {
     width: 150,
     height: 150,
-    marginBottom: SPACING.MD,
+    marginBottom: SPACING.LG,
     marginTop: SPACING.MD,
   },
   justificationText: {
     fontSize: FONT_SIZES.SM,
     color: COLORS.WHITE,
     textAlign: 'center',
-    marginBottom: SPACING.MD,
+    marginBottom: SPACING.LG,
     paddingHorizontal: SPACING.SM,
   },
   trainerContainer: {
@@ -199,6 +217,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: SPACING.LG,
   },
   trainerLabel: {
     fontSize: FONT_SIZES.SM,
@@ -217,7 +236,7 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flexDirection: 'row',
-    marginTop: SPACING.SM,
+    marginTop: 0,
     width: '100%',
     justifyContent: 'space-between',
   },
@@ -258,11 +277,7 @@ const styles = StyleSheet.create({
     bottom: 30,
     width: '100%',
     alignItems: 'center',
-  },
-  confirmButton: {
-    width: 320,
-    height: 50,
-    marginBottom: 20,
+    paddingHorizontal: SPACING.MD,
   },
 });
 

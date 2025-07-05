@@ -1,22 +1,26 @@
-import axios from 'axios';
+// Gemini API configuration and chat functionality
+import { GEMINI_API_KEY } from '@env';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Try to get API key from environment, fallback to empty string
-let OPENAI_API_KEY = '';
-try {
-  const env = require('@env');
-  OPENAI_API_KEY = env.OPENAI_API_KEY || '';
-  console.log('API Key loaded:', OPENAI_API_KEY ? 'Yes' : 'No');
+// Initialize Gemini AI with API key
+const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+
+export async function fetchGeminiChatResponse(message, context) {
+  if (!genAI) {
+    console.log('No Gemini API key found, using fallback response');
+    return { response: 'Sorry, there was an error with the Gemini AI.' };
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const result = await model.generateContent(message);
+    const response = await result.response;
+    return { response: response.text() };
 } catch (error) {
-  console.log('Environment variables not loaded, using fallback responses');
+    console.error('Gemini API error:', error);
+    return { response: 'Sorry, there was an error with the Gemini AI.' };
+  }
 }
-
-// If no API key from env, try to use the one from the logs
-if (!OPENAI_API_KEY) {
-  OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
-  console.log('Using fallback API key');
-}
-
-const API_URL = 'https://api.openai.com/v1/chat/completions';
 
 const validateResponse = (response) => {
     if (!response || typeof response !== "object") {
@@ -37,8 +41,12 @@ const validateResponse = (response) => {
             // Don't throw error, just warn and continue
         }
     }
-    if (!response.exerciseDetails || !response.exerciseDetails.exercise) {
+    if (!response.exerciseDetails) {
         throw new Error("Missing exercise details.");
+    }
+    // Check for either 'exercise' or 'name' field in exerciseDetails
+    if (!response.exerciseDetails.exercise && !response.exerciseDetails.name) {
+        throw new Error("Missing exercise name in exercise details.");
     }
     if (!response.counters) {
         throw new Error("Missing counters object.");
@@ -87,8 +95,11 @@ const getFallbackResponse = (userData) => {
 
   const randomExercise = exercises[Math.floor(Math.random() * exercises.length)];
   
+  // Generate a more descriptive fallback justification
+  let fallbackJustification = `Based on your preferences and fitness goals, we've selected a house that will best support your journey. Here, you'll find a community and training style that matches your unique strengths and aspirations. Let's get started!`;
+  
   return {
-    response: `Great to see you, ${userData.name}! Let's get you moving with some ${randomExercise.exercise}. This is perfect for your ${userData.house} training style. Ready to give it a try?`,
+    response: `Great to see you, ${userData.name}! Let's get you moving with some ${randomExercise.exercise}. This is perfect for your fitness journey. Ready to give it a try?`,
     youtubeLink: randomExercise.youtubeLink,
     exerciseDetails: {
       exercise: randomExercise.exercise,
@@ -123,21 +134,22 @@ const getFallbackResponse = (userData) => {
       }
     ],
     counters: { calories: 0, points: 5, tasksCompleted: 0 },
+    house: "FitQuest", // Default house for fallback
+    justification: fallbackJustification,
   };
 };
 
 export const getFitnessResponse = async (userData) => {
   // Check if API key is available
-  if (!OPENAI_API_KEY) {
-    console.log('No OpenAI API key found, using fallback response');
+  if (!genAI) {
+    console.log('No Gemini API key found, using fallback response');
     return getFallbackResponse(userData);
   }
 
-  console.log('Using OpenAI API with key:', OPENAI_API_KEY ? 'Available' : 'Missing');
+  console.log('Using Gemini API');
 
 const systemPrompt = `User Information:
 - Name: ${userData.name || 'User'}
-- House: ${userData.house || 'FitQuest'}
 - BMI: ${userData.bmi || 'normal'}
 - Height: ${userData.height || 170} cm
 - Weight: ${userData.weight || 70} kg
@@ -147,7 +159,11 @@ const systemPrompt = `User Information:
 
 **Instructions:**
 -   **Strict JSON Formatting:** Always respond in JSON format. Do not include any extra characters or text outside of the JSON object.
--   **Required Fields:** Every response must contain "response", "youtubeLink", "exerciseDetails", "dailyTasks", and "counters".
+-   **Required Fields:** Every response must contain "response", "youtubeLink", "exerciseDetails", "dailyTasks", "counters", "house", and **a detailed, motivational, and personalized 'justification' field**. The justification should explain why the user was assigned to this house, referencing their preferences and goals in a positive and encouraging way.
+-   **House Assignment:** Based on the user's preferences and fitness goals, assign them to one of these houses:
+    - "House of Lumina" (for users focused on flexibility, yoga, mindfulness)
+    - "House of Nova" (for users focused on cardio, endurance, high energy)
+    - "House of Valor" (for users focused on strength training, muscle building)
 -   **Exercise Details:** Provide only **one exercise** at a time, including **sets, reps, and a valid YouTube tutorial link**.
 -   **YouTube Tutorial Links:** When providing exercise tutorials, search for and include a working YouTube link that shows proper form for the exercise. Use this format: "https://www.youtube.com/watch?v=VIDEO_ID"
 -   **Daily Task and Calorie Management:** Generate a full **daily task list** aligned with ${userData.name}'s fitness goals.  Each task should be an object with a "time", "emoji", and "title" property.  For example:
@@ -176,61 +192,70 @@ const systemPrompt = `User Information:
 Follow these instructions strictly while ensuring a smooth, structured, and engaging experience for the user.
 `;
 
-    // Build messages array with conversation history
-    const messages = [
-        { role: "system", content: systemPrompt }
-    ];
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    
+    // Build the prompt with conversation history
+    let fullPrompt = systemPrompt;
 
     // Add conversation history if available
     if (userData.conversationHistory && userData.conversationHistory.length > 0) {
         // Limit to last 10 messages to avoid token limits
         const recentHistory = userData.conversationHistory.slice(-10);
-        messages.push(...recentHistory);
+      fullPrompt += "\n\nConversation History:\n";
+      recentHistory.forEach(msg => {
+        fullPrompt += `${msg.role}: ${msg.content}\n`;
+      });
     }
 
     // Add current user message
-    messages.push({ role: "user", content: userData.message });
+    fullPrompt += `\n\nUser: ${userData.message || "Hello, I'm ready to start my fitness journey!"}`;
+    fullPrompt += "\n\nPlease respond with a valid JSON object containing all required fields.";
 
+    const result = await model.generateContent(fullPrompt);
+    const response = await result.response;
+    const rawContent = response.text().trim();
+    
+    console.log('Raw Gemini Response:', rawContent);
+
+    // Parse JSON response - try direct parsing first, then extract from code blocks if needed
+    let parsedResponse;
     try {
-        const response = await axios.post(
-            API_URL,
-            {
-                model: "ft:gpt-4o-mini-2024-07-18:personal:fitquest-trainers2-0:BBidYosO",
-                messages: messages,
-                temperature: 0.8,
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${OPENAI_API_KEY}`,
-                    "Content-Type": "application/json",
-                },
-            }
-        );
-
-        if (
-            response.data &&
-            response.data.choices &&
-            response.data.choices.length > 0 &&
-            response.data.choices[0].message &&
-            response.data.choices[0].message.content
-        ) {
-            let rawContent = response.data.choices[0].message.content.trim();
-            console.log('Raw OpenAI Response:', rawContent); // Log raw response
-
+      // First, try to parse the raw content directly as JSON
+      parsedResponse = JSON.parse(rawContent);
+    } catch (directParseError) {
+      console.log("Direct JSON parsing failed, trying to extract from code blocks...");
+      
+      // If direct parsing fails, try to extract JSON from code blocks
             let jsonString = rawContent;
-            const jsonMatch = rawContent.match(/`json([\s\S]*?)`/);
+      const jsonMatch = rawContent.match(/```json\s*([\s\S]*?)\s*```/);
             if (jsonMatch && jsonMatch[1]) {
                 jsonString = jsonMatch[1].trim();
-            }
-
-            let parsedResponse;
+      } else {
+        // Try to find JSON object without code blocks
+        const jsonObjectMatch = rawContent.match(/\{[\s\S]*\}/);
+        if (jsonObjectMatch) {
+          jsonString = jsonObjectMatch[0];
+        }
+      }
+      
             try {
                 parsedResponse = JSON.parse(jsonString);
+      } catch (extractParseError) {
+        console.error("Error parsing/validating response:", extractParseError);
+        console.error("Raw Content:", rawContent);
+        console.error("Extracted JSON String:", jsonString);
+        throw new Error("Invalid response from Gemini model.");
+      }
+    }
+    
+    // Validate the parsed response
+    try {
                 validateResponse(parsedResponse);
-            } catch (error) {
-                console.error("Error parsing/validating response:", error);
-                console.error("JSON String:", jsonString); // Log the string causing the error
-                throw new Error("Invalid response from model.");
+    } catch (validationError) {
+      console.error("Response validation failed:", validationError);
+      console.error("Parsed Response:", parsedResponse);
+      throw new Error("Invalid response structure from Gemini model.");
             }
 
             const sanitizedCounters = {
@@ -239,43 +264,27 @@ Follow these instructions strictly while ensuring a smooth, structured, and enga
                 tasksCompleted: isNaN(Number(parsedResponse.counters.tasksCompleted)) ? 0 : Number(parsedResponse.counters.tasksCompleted),
             };
 
+    // Normalize exerciseDetails to use consistent field names
+    const normalizedExerciseDetails = {
+      exercise: parsedResponse.exerciseDetails?.exercise || parsedResponse.exerciseDetails?.name || "general fitness",
+      sets: parsedResponse.exerciseDetails?.sets || 3,
+      reps: parsedResponse.exerciseDetails?.reps || 10,
+      description: parsedResponse.exerciseDetails?.description || ""
+    };
+
             return {
                 response: parsedResponse.response,
-                youtubeLink: parsedResponse.youtubeLink ? sanitizeURL(parsedResponse.youtubeLink) : "",
-                exerciseDetails: parsedResponse.exerciseDetails || {},
+      youtubeLink: parsedResponse.youtubeLink ? sanitizeURL(parsedResponse.youtubeLink) : "",
+      exerciseDetails: normalizedExerciseDetails,
                 dailyTasks: parsedResponse.dailyTasks || [],
                 counters: sanitizedCounters,
+      house: parsedResponse.house || "FitQuest", // Ensure house is always present
             };
-        } else {
-            console.error("Unexpected OpenAI API response structure:", response.data);
-            throw new Error("Unexpected API response.");
-        }
     } catch (error) {
         console.error("Error fetching fitness response:", error);
         
         // Return a safe fallback response
-        return {
-            response: "I'm here to help with your fitness journey! What would you like to work on today?",
-            youtubeLink: "",
-            exerciseDetails: {
-                exercise: "general fitness",
-                sets: 3,
-                reps: 10
-            },
-            dailyTasks: [
-                {
-                    time: "8:00 AM",
-                    emoji: "💧",
-                    title: "Drink water"
-                },
-                {
-                    time: "10:00 AM",
-                    emoji: "🏃‍♂️",
-                    title: "Take a walk"
-                }
-            ],
-            counters: { calories: 0, points: 0, tasksCompleted: 0 },
-        };
+    return getFallbackResponse(userData);
     }
 };
 

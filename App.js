@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View, ImageBackground, Animated, Image } from 'react-native';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { app } from './firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './firebaseConfig';
 import notificationService from './utils/notificationService';
 import Chat from './Screens/chat';
 import HouseSelectionScreen from './Screens/houseSelectionScreen';
@@ -13,7 +13,8 @@ import SignUpScreen from './Screens/signUpScreen';
 import UserInfoScreen from './Screens/userInfoScreen';
 import BMIScreen from './Screens/BMIScreen';
 import ExerciseLevelScreen from './Screens/exerciseLevelScreen';
-import dashboard from './Screens/dashboard';
+import MainTabNavigator from './components/MainTabNavigator';
+import PostHouseLoadingScreen from './Screens/PostHouseLoadingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -68,7 +69,6 @@ const HomeScreen = () => {
 export default function App() {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState(null);
-  const auth = getAuth(app);
 
   // Initialize notifications when app starts
   useEffect(() => {
@@ -107,8 +107,7 @@ export default function App() {
         {user ? (
           // Authenticated flow
           <>
-            <Stack.Screen name="Dashboard" component={dashboard} options={{ headerShown: false }} />
-            <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="MainTabs" component={MainTabNavigator} options={{ headerShown: false }} />
             <Stack.Screen name="UserInfo" component={UserInfoScreen} options={{ headerShown: false }} />
             <Stack.Screen name="BMIScreen" component={BMIScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Selection" component={SelectionScreen} options={{ headerShown: false }} />
@@ -116,6 +115,7 @@ export default function App() {
             <Stack.Screen name="ExerciseLevel" component={ExerciseLevelScreen} options={{ headerShown: false }} />
             {/* Chat screen moved here to ensure it's always available after auth */}
             <Stack.Screen name="Chat" component={Chat} options={{ headerShown: false }} />
+            <Stack.Screen name="PostHouseLoading" component={PostHouseLoadingScreen} options={{ headerShown: false }} />
           </>
         ) : (
           // Unauthenticated flow

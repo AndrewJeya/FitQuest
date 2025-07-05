@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, 
   ImageBackground, Dimensions, ActivityIndicator 
 } from 'react-native';
-import { fetchFitnessHouse } from '../API/openAIConfig'; // ✅ Correct Import
+import { getFitnessResponse } from '../API/chatApi';
 import { useNavigation } from '@react-navigation/native';
 
 const options = [
@@ -62,14 +62,14 @@ const SelectionScreen = ({ route }) => {
       preferences: selectedOptions, // Selected fitness preferences
     };
 
-    console.log("🚀 Sending User Data to OpenAI:", JSON.stringify(userData, null, 2)); // ✅ Debugging Log
+    console.log("🚀 Sending User Data to Gemini:", JSON.stringify(userData, null, 2)); // ✅ Debugging Log
 
     try {
-      const response = await fetchFitnessHouse(userData); // ✅ API Call
-      console.log("🔹 OpenAI Raw Response:", response); // ✅ Debugging Log
+      const response = await getFitnessResponse(userData); // ✅ API Call
+      console.log("🔹 Gemini Raw Response:", response); // ✅ Debugging Log
 
       if (!response || typeof response !== "object") {
-        throw new Error("Invalid response format from OpenAI");
+        throw new Error("Invalid response format from Gemini");
       }
 
       if (!response.house) {
@@ -95,7 +95,7 @@ const SelectionScreen = ({ route }) => {
       });
 
     } catch (error) {
-      console.error("❌ Error fetching OpenAI response:", error);
+      console.error("❌ Error fetching Gemini response:", error);
       alert("Error processing your request. Please try again.");
     } finally {
       setLoading(false); // ✅ Hide Loading Indicator

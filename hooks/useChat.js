@@ -184,7 +184,7 @@ export const useChat = (userId, userInfo) => {
       
       if (error.message.includes("network") || error.message.includes("fetch")) {
         errorMessage = "Network connection issue. Here's a quick exercise to keep you moving!";
-      } else if (error.message.includes("API") || error.message.includes("OpenAI")) {
+      } else if (error.message.includes("API") || error.message.includes("Gemini")) {
         errorMessage = "Let me provide you with a great workout while I get my systems back online!";
       }
       
