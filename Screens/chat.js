@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, ImageBackground, Animated, Alert } from 'react-native';
 import { CameraView } from 'expo-camera';
-import { ref, set } from 'firebase/database';
+import { ref, set, get } from 'firebase/database';
 import { db } from '../firebaseConfig';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { generateId, getHouseConfig } from '../utils/helpers';
@@ -70,9 +70,17 @@ const Chat = ({ route, navigation }) => {
       isCompletion: true
     };
 
-    // Add completion message to chat
-    const updatedMessages = [...messages, completionMessage];
-    await set(ref(db, `chats/${userId}`), updatedMessages);
+    // Get current messages from Firebase and add completion message
+    try {
+      const chatRef = ref(db, `chats/${userId}`);
+      const snapshot = await get(chatRef);
+      const currentMessages = snapshot.exists() ? snapshot.val() : [];
+      const updatedMessages = [...currentMessages, completionMessage];
+      await set(chatRef, updatedMessages);
+    } catch (error) {
+      console.error('Error adding completion message:', error);
+      return;
+    }
 
     // Continue the conversation with next exercise or encouragement
     setTimeout(async () => {
@@ -82,10 +90,17 @@ const Chat = ({ route, navigation }) => {
         sender: "trainer"
       };
       
-      const finalMessages = [...updatedMessages, followUpMessage];
-      await set(ref(db, `chats/${userId}`), finalMessages);
+      try {
+        const chatRef = ref(db, `chats/${userId}`);
+        const snapshot = await get(chatRef);
+        const currentMessages = snapshot.exists() ? snapshot.val() : [];
+        const finalMessages = [...currentMessages, followUpMessage];
+        await set(chatRef, finalMessages);
+      } catch (error) {
+        console.error('Error adding follow-up message:', error);
+      }
     }, 2000);
-  }, [messages, userId, completedExercises]);
+  }, [userId, completedExercises]);
 
   // Handle tutorial request
   const handleTutorial = useCallback((messageId) => {
@@ -252,6 +267,7 @@ const Chat = ({ route, navigation }) => {
           style={styles.messagesContainer}
           contentContainerStyle={styles.messagesContent}
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          showsVerticalScrollIndicator={false}
         >
           {messages.map((message) => (
             <Message

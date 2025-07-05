@@ -6,10 +6,9 @@ import { BlurView } from 'expo-blur';
 import { MaterialIcons } from '@expo/vector-icons';
 import dashboard from '../Screens/dashboard';
 import userAvatar from '../assets/user.png';
-// Placeholder screens for Activity, Community, Me
-const ActivityScreen = () => <View style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Activity</Text></View>;
-const CommunityScreen = () => <View style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Community</Text></View>;
-const MeScreen = () => <View style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Me</Text></View>;
+import ProfileScreen from '../Screens/profileScreen';
+import ActivityScreen from '../Screens/ActivityScreen';
+import FeedScreen from '../Screens/FeedScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -115,8 +114,8 @@ export default function MainTabNavigator() {
     >
       <Tab.Screen name="Home" component={dashboard} />
       <Tab.Screen name="Activity" component={ActivityScreen} />
-      <Tab.Screen name="Feed" component={CommunityScreen} />
-      <Tab.Screen name="Me" component={MeScreen} />
+      <Tab.Screen name="Feed" component={FeedScreen} />
+      <Tab.Screen name="Me" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }

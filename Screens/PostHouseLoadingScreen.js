@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, Animated } from 'react-native';
 import { set, ref } from 'firebase/database';
 import { db } from '../firebaseConfig';
 import { getFitnessResponse } from '../API/chatApi';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { getHouseConfig } from '../utils/helpers';
+import styles from '../styles/chatStyles';
 
 const PostHouseLoadingScreen = ({ route, navigation }) => {
   const { userId, userInfo } = route.params;
@@ -90,64 +91,13 @@ const PostHouseLoadingScreen = ({ route, navigation }) => {
         <Text style={styles.Loading_welcomeText}>
           Hi {userInfo.name}, welcome to {houseConfig.name}!
         </Text>
-        <Text style={styles.Loading_subtitle}>{loadingText}</Text>
         <View style={styles.progressBarContainer}>
           <Animated.View style={[styles.progressBar, { width: progressInterpolate }]} />
         </View>
+        <Text style={[styles.Loading_welcomeText, { fontSize: 16, marginTop: 18 }]}>{loadingText}</Text>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  LoadingPagecontainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#001F3F',
-  },
-  Loading_backgroundVideo: {
-    ...StyleSheet.absoluteFillObject,
-    width: '100%',
-    height: '100%',
-    opacity: 0.7,
-  },
-  Loading_container: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 2,
-    paddingHorizontal: 24,
-    paddingTop: 60,
-  },
-  Loading_welcomeText: {
-    fontSize: 28,
-    color: '#fff',
-    fontWeight: 'bold',
-    marginBottom: 18,
-    textAlign: 'center',
-    letterSpacing: 0.2,
-  },
-  Loading_subtitle: {
-    fontSize: 18,
-    color: '#fff',
-    marginBottom: 28,
-    textAlign: 'center',
-    fontWeight: '500',
-    opacity: 0.85,
-  },
-  progressBarContainer: {
-    width: 220,
-    height: 10,
-    backgroundColor: '#333',
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginTop: 10,
-  },
-  progressBar: {
-    height: 10,
-    backgroundColor: '#03C988',
-    borderRadius: 8,
-  },
-});
 
 export default PostHouseLoadingScreen; 

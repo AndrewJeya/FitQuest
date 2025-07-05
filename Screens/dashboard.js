@@ -1,46 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { ref, get } from 'firebase/database';
+import { ref, get, set, update } from 'firebase/database';
 import { db } from '../firebaseConfig';
 import { auth } from '../firebaseConfig';
 import LottieView from 'lottie-react-native';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES, DEFAULTS } from '../constants';
 import { formatDate } from '../utils/helpers';
-import { DataCard, TaskItem, WeekProgress } from '../components/dashboard';
+import { DataCard, TaskItem, WeekProgress, MealLogModal, ProgressCircle } from '../components/dashboard';
 import { globalStyles } from '../styles/globalStyles';
 import notificationService from '../utils/notificationService';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useCamera } from '../hooks/useCamera';
+import { analyzeMealPhoto } from '../API/chatApi';
 
 const DashboardScreen = ({ route, navigation }) => {
     const [userPoints, setUserPoints] = useState(DEFAULTS.POINTS);
     const [userTasks, setUserTasks] = useState(DEFAULTS.TASKS);
+    const [completedTasks, setCompletedTasks] = useState({});
     const [isLoading, setIsLoading] = useState(true);
+    const [mealModalVisible, setMealModalVisible] = useState(false);
+    const [currentMealTask, setCurrentMealTask] = useState(null);
+    const [dailyCalories, setDailyCalories] = useState(0);
+    
+    const { cameraRef, takePicture } = useCamera();
     
     const {
         userInfo = {},
         recommended_calories_per_day = DEFAULTS.CALORIES_PER_DAY,
     } = route.params || {};
 
-    const goalsCompleted = 5;
-    const totalGoals = 10;
+    const goalsCompleted = Object.keys(completedTasks).length;
+    const totalGoals = userTasks.length;
+    const progressPercentage = totalGoals > 0 ? (goalsCompleted / totalGoals) * 100 : 0;
 
-    // Load user data from Firebase
+    // Get today's date string (e.g., 2024-07-05)
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Load user data and completed tasks from Firebase
     useEffect(() => {
         const loadUserData = async () => {
             const userId = auth.currentUser?.uid;
-            
             if (!userId) {
                 setIsLoading(false);
-            return;
-        }
-
-        try {
+                return;
+            }
+            try {
                 // Load points
                 const pointsSnapshot = await get(ref(db, `users/${userId}/points`));
                 if (pointsSnapshot.exists()) {
                     setUserPoints(pointsSnapshot.val());
                 }
-
                 // Load tasks from chat
                 const chatSnapshot = await get(ref(db, `chats/${userId}`));
                 if (chatSnapshot.exists()) {
@@ -49,16 +58,122 @@ const DashboardScreen = ({ route, navigation }) => {
                     if (lastMessage?.dailyTasks) {
                         setUserTasks(lastMessage.dailyTasks);
                     }
-            }
-        } catch (error) {
+                }
+                // Load completed tasks for today
+                const completedSnapshot = await get(ref(db, `users/${userId}/completedTasks/${today}`));
+                if (completedSnapshot.exists()) {
+                    setCompletedTasks(completedSnapshot.val());
+                } else {
+                    setCompletedTasks({});
+                }
+                // Load daily calories
+                const caloriesSnapshot = await get(ref(db, `users/${userId}/dailyCalories/${today}`));
+                if (caloriesSnapshot.exists()) {
+                    setDailyCalories(caloriesSnapshot.val());
+                }
+            } catch (error) {
                 console.error('Error loading user data:', error);
-        } finally {
+            } finally {
                 setIsLoading(false);
-        }
+            }
         };
-
         loadUserData();
     }, []);
+
+    // Toggle task completion and sync with Firebase
+    const handleToggleTaskComplete = async (task) => {
+        const userId = auth.currentUser?.uid;
+        if (!userId) return;
+        const taskKey = `${task.time}_${task.title}`;
+        const updatedCompleted = { ...completedTasks };
+        if (completedTasks[taskKey]) {
+            delete updatedCompleted[taskKey];
+        } else {
+            updatedCompleted[taskKey] = true;
+        }
+        setCompletedTasks(updatedCompleted);
+        await set(ref(db, `users/${userId}/completedTasks/${today}`), updatedCompleted);
+    };
+
+    // Handle meal logging
+    const handleMealLog = (mealTask) => {
+        setCurrentMealTask(mealTask);
+        setMealModalVisible(true);
+    };
+
+    // Handle meal approval from trainer
+    const handleMealApproved = async (mealData) => {
+        const userId = auth.currentUser?.uid;
+        if (!userId) return;
+
+        try {
+            // Send meal photo and info to trainer via chat
+            const mealMessage = `I'm logging my ${mealData.task.title} at ${mealData.task.time}. Here's my meal photo for approval.`;
+            
+            // Send to chat with trainer
+            const chatRef = ref(db, `chats/${userId}`);
+            const chatSnapshot = await get(chatRef);
+            const messages = chatSnapshot.exists() ? chatSnapshot.val() : [];
+            
+            const newMessage = {
+                id: Date.now().toString(),
+                text: mealMessage,
+                sender: 'user',
+                timestamp: new Date().toISOString(),
+                type: 'meal_log',
+                mealData: mealData,
+            };
+            
+            console.log('Adding meal log message:', newMessage);
+            messages.push(newMessage);
+            await set(chatRef, messages);
+            console.log('Meal log message added to Firebase');
+
+            // Get AI trainer response using dedicated meal analysis
+            const trainerResponse = await analyzeMealPhoto(mealData, userInfo);
+            console.log('Trainer response received:', trainerResponse);
+
+            // Add trainer response to chat
+            const trainerMessage = {
+                id: (Date.now() + 1).toString(),
+                text: `Meal Analysis: ${trainerResponse.approved ? '✅ Approved' : '❌ Needs improvement'}\n\nCalories: ${trainerResponse.estimatedCalories}\nFeedback: ${trainerResponse.feedback}\nSuggestions: ${trainerResponse.suggestions}`,
+                sender: 'trainer',
+                timestamp: new Date().toISOString(),
+                type: 'meal_approval',
+                analysis: trainerResponse,
+            };
+            
+            console.log('Adding trainer response message:', trainerMessage);
+            messages.push(trainerMessage);
+            await set(chatRef, messages);
+            console.log('Trainer response added to Firebase');
+
+            // Process the trainer response
+            if (trainerResponse.approved) {
+                // Update daily calories
+                const estimatedCalories = trainerResponse.estimatedCalories;
+                const newCalories = dailyCalories + estimatedCalories;
+                setDailyCalories(newCalories);
+                await set(ref(db, `users/${userId}/dailyCalories/${today}`), newCalories);
+                
+                // Mark task as completed
+                const taskKey = `${mealData.task.time}_${mealData.task.title}`;
+                const updatedCompleted = { ...completedTasks, [taskKey]: true };
+                setCompletedTasks(updatedCompleted);
+                await set(ref(db, `users/${userId}/completedTasks/${today}`), updatedCompleted);
+                
+                // Update points
+                const newPoints = userPoints + 10; // Bonus for logging meals
+                setUserPoints(newPoints);
+                await set(ref(db, `users/${userId}/points`), newPoints);
+                
+                console.log('Meal approved - updated calories, completion, and points');
+            }
+        } catch (error) {
+            console.error('Error handling meal approval:', error);
+            throw error;
+        }
+    };
 
     const handleUpgrade = () => {
         // Remove the upgrade navigation since the screen doesn't exist
@@ -118,10 +233,6 @@ const DashboardScreen = ({ route, navigation }) => {
 
             <View style={styles.topBar}>
                 <View style={styles.userInfoContainer}>
-                    <Image
-                        source={require('../assets/user.png')}
-                        style={styles.avatar}
-                    />
                     <View style={styles.pointsContainer}>
                         <Image 
                             source={require('../assets/points-icon.png')} 
@@ -150,19 +261,21 @@ const DashboardScreen = ({ route, navigation }) => {
                 <View style={styles.greetingSection}>
                     <View style={styles.greetingContent}>
                         <Text style={styles.date}>{formatDate()}</Text>
-                        <Text style={styles.greetingName}>{userInfo.name},</Text>
-                        <Text style={styles.greetingText}>Let's conquer the day!</Text>
-                        <View style={styles.goalsContainer}>
-                            <Text style={styles.goalsText}>
-                                <Text style={styles.goalsCompleted}>{goalsCompleted}</Text>
-                                <Text style={styles.goalsTotal}>/10 goals completed</Text>
-                            </Text>
-                        </View>
+                        <Text style={styles.heroName}>{userInfo.name},</Text>
+                        <Text style={styles.heroSubtitle}>Let's conquer the day!</Text>
+                        <Text style={styles.heroGoals}>
+                          <Text style={styles.heroGoalsHighlight}>{goalsCompleted}/{totalGoals} goals</Text>
+                          <Text style={styles.heroGoalsRest}> completed</Text>
+                        </Text>
+                        {userInfo.justification && (
+                          <Text style={styles.justificationText}>{userInfo.justification}</Text>
+                        )}
                     </View>
                     <View style={styles.greetingVisual}>
-                        <Image
-                            source={require('../assets/dashboardProgress.png')}
-                            style={styles.greetingProgress}
+                        <ProgressCircle 
+                            progress={progressPercentage}
+                            size={100}
+                            strokeWidth={12}
                         />
                     </View>
                 </View>
@@ -170,9 +283,9 @@ const DashboardScreen = ({ route, navigation }) => {
                 <View style={styles.dataCards}>
                     <DataCard
                         title="Daily Calories"
-                        value={recommended_calories_per_day}
+                        value={`${dailyCalories}/${recommended_calories_per_day}`}
                         icon={require('../assets/fireDashboard.png')}
-                        progress={75}
+                        progress={(dailyCalories / recommended_calories_per_day) * 100}
                         maxProgress={100}
                         style={styles.dataCard}
                     />
@@ -207,11 +320,16 @@ const DashboardScreen = ({ route, navigation }) => {
                                 time={task.time}
                                 emoji={task.emoji}
                                 title={task.title}
-                                completed={false}
+                                completed={!!completedTasks[`${task.time}_${task.title}`]}
+                                onToggleComplete={() => handleToggleTaskComplete(task)}
+                                onMealLog={handleMealLog}
                             />
                         ))
                     ) : (
-                        <Text style={styles.noTasksText}>No tasks for today.</Text>
+                        <View style={styles.emptyState}>
+                            <Text style={styles.noTasksText}>No tasks for today.</Text>
+                            <Text style={styles.emptySubtext}>Check back later for your personalized plan!</Text>
+                        </View>
                     )}
                 </View>
             </ScrollView>
@@ -219,6 +337,15 @@ const DashboardScreen = ({ route, navigation }) => {
             <TouchableOpacity style={styles.fab} onPress={handleChatNavigation}>
                 <Image source={require('../assets/chatBG.png')} style={styles.fabIcon} />
             </TouchableOpacity>
+
+            <MealLogModal
+                visible={mealModalVisible}
+                onClose={() => setMealModalVisible(false)}
+                mealTask={currentMealTask}
+                onMealApproved={handleMealApproved}
+                cameraRef={cameraRef}
+                takePicture={takePicture}
+            />
         </View>
     );
 };
@@ -310,39 +437,45 @@ const styles = StyleSheet.create({
         marginHorizontal: SPACING.MD,
         marginTop: 24,
         marginBottom: 18,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
     },
     greetingContent: {},
     greetingVisual: {},
-    greetingProgress: {
-        width: 100,
-        height: 100,
-    },
     date: {
         color: 'rgba(245, 245, 245, 0.30)',
         fontSize: FONT_SIZES.MD,
         marginBottom: 16,
     },
-    greetingName: {
-        fontSize: FONT_SIZES.LG,
-        color: COLORS.WHITE,
+    heroName: {
+        fontWeight: 'bold',
+        fontSize: 22,
+        color: '#fff',
+        marginBottom: 2,
+        textAlign: 'left',
     },
-    greetingText: {
-        fontSize: FONT_SIZES.LG,
-        color: COLORS.WHITE,
+    heroSubtitle: {
+        fontSize: 18,
+        color: '#fff',
+        marginBottom: 6,
+        textAlign: 'left',
     },
-    goalsContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
+    heroGoals: {
+        fontSize: 16,
+        color: '#fff',
+        marginTop: 2,
+        textAlign: 'left',
     },
-    goalsText: {
-        color: COLORS.SUCCESS,
-        fontSize: FONT_SIZES.LG,
-    },
-    goalsCompleted: {
+    heroGoalsHighlight: {
+        color: '#22C55E',
         fontWeight: 'bold',
     },
-    goalsTotal: {
-        fontWeight: 'normal',
+    heroGoalsRest: {
+        color: '#fff',
+        fontWeight: '400',
     },
     dataCards: {
         flexDirection: 'row',
@@ -353,15 +486,28 @@ const styles = StyleSheet.create({
     },
     dataCard: {
         flex: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
     },
     dataCardRight: {
         flex: 1,
+        marginLeft: SPACING.MD,
     },
     todaysPlan: {
         padding: SPACING.MD,
         zIndex: 1,
         marginHorizontal: SPACING.MD,
         marginBottom: SPACING.MD,
+        backgroundColor: 'rgba(53, 62, 58, 0.3)',
+        borderRadius: BORDER_RADIUS.LG,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
     },
     planTitle: {
         color: COLORS.WHITE,
@@ -373,6 +519,8 @@ const styles = StyleSheet.create({
         color: COLORS.WHITE,
         fontStyle: 'italic',
         textAlign: 'center',
+        fontSize: FONT_SIZES.MD,
+        marginBottom: SPACING.SM,
     },
     fab: {
         width: 56,
@@ -384,6 +532,11 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 80,
         right: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 8,
     },
     fabIcon: {
         width: 32,
@@ -400,6 +553,25 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingBottom: 20,
+    },
+    justificationText: {
+        color: '#A0A0A0',
+        fontSize: 14,
+        marginTop: 8,
+        marginBottom: 4,
+        textAlign: 'left',
+        fontStyle: 'italic',
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: SPACING.MD,
+    },
+    emptySubtext: {
+        color: 'rgba(245, 245, 245, 0.30)',
+        fontSize: FONT_SIZES.MD,
+        textAlign: 'center',
     },
 });
 

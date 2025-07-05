@@ -288,4 +288,100 @@ Follow these instructions strictly while ensuring a smooth, structured, and enga
     }
 };
 
+export async function analyzeMealPhoto(mealData, userInfo) {
+  if (!genAI) {
+    console.log('No Gemini API key found, using fallback meal analysis');
+    return {
+      approved: true,
+      estimatedCalories: 400,
+      feedback: "Thanks for logging your meal! Keep up the great work.",
+      suggestions: "Continue making healthy choices throughout the day."
+    };
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    
+    const mealPrompt = `You are a fitness trainer analyzing a user's meal photo. 
+
+User Information:
+- Name: ${userInfo.name || 'User'}
+- Meal: ${mealData.task.title} at ${mealData.task.time}
+- Target Calories: ${userInfo.targetedCalorieIntake || 2000} per day
+
+CRITICAL: You must respond with ONLY a valid JSON object. No other text, no markdown, no explanations.
+
+Required JSON format:
+{
+  "approved": true,
+  "estimatedCalories": 450,
+  "feedback": "Great choice! This looks like a healthy meal.",
+  "suggestions": "Consider adding more vegetables next time."
+}
+
+Rules:
+- "approved" must be true or false (be encouraging, approve most meals)
+- "estimatedCalories" must be a number between 0-2000
+- "feedback" should be encouraging and specific (max 100 characters)
+- "suggestions" should be constructive advice (max 100 characters)
+- Respond with ONLY the JSON object, nothing else`;
+
+    const result = await model.generateContent(mealPrompt);
+    const response = await result.response;
+    const rawContent = response.text().trim();
+    
+    console.log('Raw meal analysis response:', rawContent);
+
+    // Try multiple parsing strategies
+    let parsedResponse = null;
+    
+    // Strategy 1: Direct JSON parsing
+    try {
+      parsedResponse = JSON.parse(rawContent);
+    } catch (error) {
+      console.log('Direct JSON parsing failed, trying extraction...');
+    }
+    
+    // Strategy 2: Extract JSON from response
+    if (!parsedResponse) {
+      const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          parsedResponse = JSON.parse(jsonMatch[0]);
+        } catch (error) {
+          console.log('JSON extraction failed');
+        }
+      }
+    }
+    
+    // Strategy 3: Fallback response
+    if (!parsedResponse) {
+      console.log('Using fallback meal analysis');
+      parsedResponse = {
+        approved: true,
+        estimatedCalories: 400,
+        feedback: "Thanks for logging your meal! Keep up the great work.",
+        suggestions: "Continue making healthy choices throughout the day."
+      };
+    }
+    
+    // Validate and sanitize the response
+    return {
+      approved: Boolean(parsedResponse.approved),
+      estimatedCalories: Math.max(0, Math.min(2000, Number(parsedResponse.estimatedCalories) || 400)),
+      feedback: String(parsedResponse.feedback || "Great job logging your meal!"),
+      suggestions: String(parsedResponse.suggestions || "Keep making healthy choices!")
+    };
+    
+  } catch (error) {
+    console.error('Error analyzing meal photo:', error);
+    return {
+      approved: true,
+      estimatedCalories: 400,
+      feedback: "Thanks for logging your meal! Keep up the great work.",
+      suggestions: "Continue making healthy choices throughout the day."
+    };
+  }
+}
+
 export default validateResponse;
